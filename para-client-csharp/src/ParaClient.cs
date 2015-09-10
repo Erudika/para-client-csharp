@@ -194,11 +194,7 @@ namespace Para.Client
             req.ResourcePath = reqPath;
             req.HttpMethod = httpMethod.ToString();
             req.UseQueryString = true;
-            //req.Headers[HeaderKeys.XAmzContentSha256Header] = "UNSIGNED-PAYLOAD";
-            //req.AlternateEndpoint = Amazon.RegionEndpoint.USEast1;
-            //req.AuthenticationRegion = "us-east-1";
-            //req.CanonicalResource = "para";
-            //req.CanonicalResourcePrefix = "";
+
             RestRequest restReq = new RestRequest(new Uri(endpointURL));
             restReq.Method = httpMethod;
             client.BaseUrl = new Uri(this.endpoint + reqPath);
