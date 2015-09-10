@@ -6,7 +6,7 @@ using System.Runtime.InteropServices;
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
 [assembly: AssemblyTitle("para-client-csharp")]
-[assembly: AssemblyDescription("Para API Client for C# (http://www.paraio.org)")]
+[assembly: AssemblyDescription("Para API Client for .NET (http://www.paraio.org)")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("Erudika")]
 [assembly: AssemblyProduct("para_client_csharp")]

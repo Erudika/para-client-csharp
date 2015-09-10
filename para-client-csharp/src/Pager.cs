@@ -18,6 +18,10 @@
 
 namespace Para.Client
 {
+    /// <summary>
+    /// This class stores pagination data. It limits the results for queries in the DAO
+    /// and Search objects and also counts the total number of results that are returned.
+    /// </summary>
     public class Pager
     {
         public long page { get; set; }
