@@ -62,7 +62,7 @@
     <None Include="NuGet.config">
       <SubType>Designer</SubType>
     </None>
-    <None Include="para-client-csharp.nuspec">
+    <None Include="Package.nuspec">
       <SubType>Designer</SubType>
     </None>
     <None Include="packages.config" />
