@@ -3,6 +3,9 @@
 
 # .NET Client for Para
 
+[![Build status](https://ci.appveyor.com/api/projects/status/3rkoxvpfrafoi4t9?svg=true)](https://ci.appveyor.com/project/alex-bogdanovski/para-client-csharp)
+[![NuGet](https://img.shields.io/nuget/v/para_client_csharp.svg)](https://www.nuget.org/packages/para_client_csharp/)
+
 
 ## What is this?
 

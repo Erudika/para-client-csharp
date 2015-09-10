@@ -8,3 +8,7 @@ deploy:
 - provider: NuGet
   api_key:
     secure: 0a0ZfngLKNjf/OTs6QxmAnrstMt46iVXeRydj7I/pnlRQWgZ9DSf8e074HaMV/hO
+after_build:
+  - nuget pack "%APPVEYOR_BUILD_FOLDER%\para-client-csharp\para-client-csharp\para-client-csharp.csproj" -version "%GitVersion_NuGetVersion%" -Symbols
+  - appveyor PushArtifact "para-client-csharp.%GitVersion_NuGetVersion%.nupkg"
+  - appveyor PushArtifact "para-client-csharp.%GitVersion_NuGetVersion%.symbols.nupkg"
