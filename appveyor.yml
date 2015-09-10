@@ -13,5 +13,5 @@ before_build:
   - nuget-restore para-client-csharp.sln
 after_build:
   - nuget pack "%APPVEYOR_BUILD_FOLDER%\para-client-csharp\para-client-csharp.csproj" -version "%APPVEYOR_BUILD_VERSION%" -Symbols
-  - appveyor PushArtifact "para-client-csharp\para-client-csharp.%APPVEYOR_BUILD_VERSION%.nupkg"
-  - appveyor PushArtifact "para-client-csharp\para-client-csharp.%APPVEYOR_BUILD_VERSION%.symbols.nupkg"
+  - appveyor PushArtifact "para-client-csharp\para_client_csharp.%APPVEYOR_BUILD_VERSION%.nupkg"
+  - appveyor PushArtifact "para-client-csharp\para_client_csharp.%APPVEYOR_BUILD_VERSION%.symbols.nupkg"
