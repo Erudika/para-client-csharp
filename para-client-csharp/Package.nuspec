@@ -27,8 +27,5 @@
     </dependencies>
     <references></references>
     <tags>backend,para,cloud,api,client</tags>
-  </metadata>
-  <files>
-    <file src="lib\" target="lib" />
-  </files>
+  </metadata>  
 </package>
