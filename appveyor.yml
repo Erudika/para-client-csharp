@@ -12,6 +12,6 @@ before_build:
   - appveyor DownloadFile https://raw.githubusercontent.com/appveyor/ci/master/scripts/nuget-restore.cmd
   - nuget-restore para-client-csharp.sln
 after_build:
-  - nuget pack "%APPVEYOR_BUILD_FOLDER%\para-client-csharp\para-client-csharp\para-client-csharp.csproj" -version "%GitVersion_NuGetVersion%" -Symbols
+  - nuget pack "%APPVEYOR_BUILD_FOLDER%\para-client-csharp.csproj" -version "%GitVersion_NuGetVersion%" -Symbols
   - appveyor PushArtifact "para-client-csharp.%GitVersion_NuGetVersion%.nupkg"
   - appveyor PushArtifact "para-client-csharp.%GitVersion_NuGetVersion%.symbols.nupkg"
