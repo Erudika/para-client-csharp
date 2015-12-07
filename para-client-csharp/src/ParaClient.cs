@@ -1113,52 +1113,6 @@ namespace Para.Client
         }
         
         /// <summary>
-        /// Returns the validation constraints Dictionary.
-        /// </summary>
-        /// <returns>a Dictionary containing all validation constraints.</returns>
-        public Dictionary<string, object> validationConstraints()
-        {
-            return JsonConvert.DeserializeObject<Dictionary<string, object>>((string) getEntity(invokeGet("_constraints", null), true));
-        }
-        
-        /// <summary>
-        /// Returns the validation constraints Dictionary.
-        /// </summary>
-        /// <param name="type">a type</param>
-        /// <returns>a Dictionary containing all validation constraints.</returns>
-        public Dictionary<string, Dictionary<string, Dictionary<string, object>>> validationConstraints(string type)
-        {
-            return JsonConvert.DeserializeObject<Dictionary<string, Dictionary<string, Dictionary<string, object>>>>
-                ((string) getEntity(invokeGet("_constraints/" + type, null), true));
-        }
-        
-        /// <summary>
-        /// Add a new constraint for a given field.
-        /// </summary>
-        /// <param name="type">a type</param>
-        /// <param name="field">a field name</param>
-        /// <param name="c">the constraint</param>
-        /// <returns>a Dictionary containing all validation constraints for this type.</returns>
-        public Dictionary<string, Dictionary<string, Dictionary<string, object>>> addValidationConstraint(string type, string field, Constraint c)
-        {
-            return JsonConvert.DeserializeObject<Dictionary<string, Dictionary<string, Dictionary<string, object>>>> 
-                ((string) getEntity(invokePut("_constraints/" + type + "/" + field + "/" + c.name, c.payload), true));
-        }
-        
-        /// <summary>
-        /// Removes a validation constraint for a given field.
-        /// </summary>
-        /// <param name="type">a type</param>
-        /// <param name="field">a field name</param>
-        /// <param name="constraintName">the name of the constraint to remove</param>
-        /// <returns>a Dictionary containing all validation constraints for this type.</returns>
-        public Dictionary<string, object> removeValidationConstraint(string type, string field, string constraintName)
-        {
-            return JsonConvert.DeserializeObject<Dictionary<string, object>>
-                ((string) getEntity(invokeDelete("_constraints/" + type + "/" + field + "/" + constraintName, null), true));
-        }
-        
-        /// <summary>
         /// Returns a User or an App that is currently authenticated.
         /// </summary>
         /// <returns>User or App object or null</returns>
@@ -1166,6 +1120,56 @@ namespace Para.Client
         {
         	return (ParaObject) getEntity(invokeGet("_me", null), false);
         }
+
+		/////////////////////////////////////////////
+		//		 Validation Constraints
+		/////////////////////////////////////////////
+
+		/// <summary>
+		/// Returns the validation constraints Dictionary.
+		/// </summary>
+		/// <returns>a Dictionary containing all validation constraints.</returns>
+		public Dictionary<string, object> validationConstraints()
+		{
+			return JsonConvert.DeserializeObject<Dictionary<string, object>>((string) getEntity(invokeGet("_constraints", null), true));
+		}
+
+		/// <summary>
+		/// Returns the validation constraints Dictionary.
+		/// </summary>
+		/// <param name="type">a type</param>
+		/// <returns>a Dictionary containing all validation constraints.</returns>
+		public Dictionary<string, Dictionary<string, Dictionary<string, object>>> validationConstraints(string type)
+		{
+			return JsonConvert.DeserializeObject<Dictionary<string, Dictionary<string, Dictionary<string, object>>>>
+				((string) getEntity(invokeGet("_constraints/" + type, null), true));
+		}
+
+		/// <summary>
+		/// Add a new constraint for a given field.
+		/// </summary>
+		/// <param name="type">a type</param>
+		/// <param name="field">a field name</param>
+		/// <param name="c">the constraint</param>
+		/// <returns>a Dictionary containing all validation constraints for this type.</returns>
+		public Dictionary<string, Dictionary<string, Dictionary<string, object>>> addValidationConstraint(string type, string field, Constraint c)
+		{
+			return JsonConvert.DeserializeObject<Dictionary<string, Dictionary<string, Dictionary<string, object>>>> 
+				((string) getEntity(invokePut("_constraints/" + type + "/" + field + "/" + c.name, c.payload), true));
+		}
+
+		/// <summary>
+		/// Removes a validation constraint for a given field.
+		/// </summary>
+		/// <param name="type">a type</param>
+		/// <param name="field">a field name</param>
+		/// <param name="constraintName">the name of the constraint to remove</param>
+		/// <returns>a Dictionary containing all validation constraints for this type.</returns>
+		public Dictionary<string, object> removeValidationConstraint(string type, string field, string constraintName)
+		{
+			return JsonConvert.DeserializeObject<Dictionary<string, object>>
+				((string) getEntity(invokeDelete("_constraints/" + type + "/" + field + "/" + constraintName, null), true));
+		}
     }
 
     public class ParaRequest : AmazonWebServiceRequest
