@@ -141,7 +141,7 @@ namespace Para.Client
                     {
                         GetType().GetProperty(entry.Key).SetValue(this, entry.Value, null);
                     }
-                    catch (Exception e)
+                    catch
                     {
                         this[entry.Key] = entry.Value;
                     }

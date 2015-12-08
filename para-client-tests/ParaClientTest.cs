@@ -1,19 +1,19 @@
 ﻿using System;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Para.Client;
 using System.Collections.Generic;
 using System.Threading;
+using NUnit.Framework;
 
 namespace Para.Client.Tests
 {
-    [TestClass]
+	[TestFixture]
     public class ParaClientTest
     {
 
-        private static ParaClient pc;
-        private const string catsType = "cat";
-        private const string dogsType = "dog";
-        private const string batsType = "bat";
+        static ParaClient pc;
+        const string catsType = "cat";
+        const string dogsType = "dog";
+        const string batsType = "bat";
 
         protected static ParaObject u;
         protected static ParaObject u1;
@@ -25,8 +25,8 @@ namespace Para.Client.Tests
         protected static ParaObject a2;
 
 
-        [ClassInitialize]
-        public static void setUpClass(TestContext tc)
+		[SetUp]
+        public static void setUpClass()
         {
             pc = new ParaClient("app:para", "Ki9naQlGNGLGbY0acuSwJ9y08mTGqqgzCMYgUePzI+egqhEoYzjqpQ==");
             pc.setEndpoint("http://localhost:8080");
@@ -76,7 +76,7 @@ namespace Para.Client.Tests
             Thread.Sleep(1000);
         }
 
-        [TestMethod]
+        [Test]
         public void testCRUD()
         {
             Assert.IsNull(pc.create(null));
@@ -118,7 +118,7 @@ namespace Para.Client.Tests
             Assert.IsNull(pc.read(tr.type, tr.id));
         }
 
-        [TestMethod]
+        [Test]
         public void testBatchCRUD()
         {
             List<ParaObject> dogs = new List<ParaObject>();
@@ -182,7 +182,7 @@ namespace Para.Client.Tests
             Assert.IsTrue(((Dictionary<string, object>) pc.getApp()["datatypes"]).ContainsValue(dogsType));
         }
 
-        [TestMethod]
+        [Test]
         public void testList()
         {
             List<ParaObject> cats = new List<ParaObject>();
@@ -216,7 +216,7 @@ namespace Para.Client.Tests
             Assert.IsTrue(((Dictionary<string, object>) pc.getApp()["datatypes"]).ContainsValue(catsType));
         }
 
-        [TestMethod]
+        [Test]
         public void testSearch()
         {
             Assert.IsNull(pc.findById(null));
@@ -254,17 +254,17 @@ namespace Para.Client.Tests
 
             Assert.IsTrue(pc.findSimilar(t.type, "", null, null).Count == 0);
             Assert.IsTrue(pc.findSimilar(t.type, "", new string[0], "").Count == 0);
-            res = pc.findSimilar(s1.type, s1.id, new string[] { "name" }, s1.name);
+            res = pc.findSimilar(s1.type, s1.id, new [] { "name" }, s1.name);
             Assert.IsFalse(res.Count == 0);
             Assert.AreEqual(s2.id, res[0].id);
 
             int i0 = pc.findTagged(u.type, null).Count;
-            int i1 = pc.findTagged(u.type, new string[] { "two" }).Count;
-            int i2 = pc.findTagged(u.type, new string[] { "one", "two" }).Count;
-            int i3 = pc.findTagged(u.type, new string[] { "three" }).Count;
-            int i4 = pc.findTagged(u.type, new string[] { "four", "three" }).Count;
-            int i5 = pc.findTagged(u.type, new string[] { "five", "three" }).Count;
-            int i6 = pc.findTagged(t.type, new string[] { "four", "three" }).Count;
+            int i1 = pc.findTagged(u.type, new [] { "two" }).Count;
+            int i2 = pc.findTagged(u.type, new [] { "one", "two" }).Count;
+            int i3 = pc.findTagged(u.type, new [] { "three" }).Count;
+            int i4 = pc.findTagged(u.type, new [] { "four", "three" }).Count;
+            int i5 = pc.findTagged(u.type, new [] { "five", "three" }).Count;
+            int i6 = pc.findTagged(t.type, new [] { "four", "three" }).Count;
 
             Assert.AreEqual(0, i0);
             Assert.AreEqual(2, i1);
@@ -321,7 +321,7 @@ namespace Para.Client.Tests
             Assert.IsTrue(pc.getCount(null, new Dictionary<string, object> { { "type", u.type } }) > 1);
         }
 
-        [TestMethod]
+        [Test]
         public void testLinks()
         {
             Assert.IsNotNull(pc.link(u, t.id));
@@ -346,7 +346,7 @@ namespace Para.Client.Tests
             Assert.IsFalse(pc.isLinked(u, u2));
         }
 
-        [TestMethod]
+        [Test]
         public void testUtils()
         {
             string id1 = pc.newId();
@@ -376,7 +376,7 @@ namespace Para.Client.Tests
             Assert.AreEqual(ht1, "15s");
         }
 
-        [TestMethod]
+        [Test]
         public void testMisc()
         {
             string kittenType = "kitten";
@@ -406,12 +406,10 @@ namespace Para.Client.Tests
             ParaObject ct = new ParaObject("felix");
             ct.type = kittenType;
             ParaObject ct2 = null;
-            try
-            {
-                // validation fails
-                ct2 = pc.create(ct);
-            }
-            catch (Exception e) { }
+			try {
+				// validation fails
+				ct2 = pc.create (ct);
+			} catch { }
 
             Assert.IsNull(ct2);
             ct["paws"] = "4";

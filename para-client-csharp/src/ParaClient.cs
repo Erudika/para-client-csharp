@@ -36,17 +36,17 @@ namespace Para.Client
     public class ParaClient
     {
 
-        private static readonly string DEFAULT_ENDPOINT = "https://paraio.com";
-        private static readonly string DEFAULT_PATH = "/v1/";
-        private static readonly string SEPARATOR = ":";
-        private string endpoint;
-        private string path;
-        private readonly string accessKey;
-        private readonly string secretKey;
+        static readonly string DEFAULT_ENDPOINT = "https://paraio.com";
+        static readonly string DEFAULT_PATH = "/v1/";
+        static readonly string SEPARATOR = ":";
+        string endpoint;
+        string path;
+        readonly string accessKey;
+        readonly string secretKey;
 
-        private readonly AWS4Signer signer = new AWS4Signer();
-        private readonly RestClient client = new RestClient();
-        private readonly EventLog logger = new EventLog();
+        readonly AWS4Signer signer = new AWS4Signer();
+        readonly RestClient client = new RestClient();
+        readonly EventLog logger = new EventLog();
 
         public ParaClient(string accessKey, string secretKey)
         {
@@ -116,7 +116,7 @@ namespace Para.Client
             }
         }
 
-        private object getEntity(IRestResponse res, bool returnRawJSON)
+        object getEntity(IRestResponse res, bool returnRawJSON)
         {
             if (res != null)
             {
@@ -126,7 +126,7 @@ namespace Para.Client
                 {
                     if (returnRawJSON)
                     {
-                        return (res.Content != null) ? res.Content : null;
+						return res.Content;
                     }
                     else
                     {
@@ -137,7 +137,7 @@ namespace Para.Client
                       && res.StatusCode != HttpStatusCode.NotModified
                       && res.StatusCode != HttpStatusCode.NoContent)
                 {
-                    Dictionary<string, Object> error = (res.Content != null) ?
+                    var error = (res.Content != null) ?
                             JsonConvert.DeserializeObject<Dictionary<string, object>>(res.Content) : null;
                     if (error != null && error.ContainsKey("code")) {
                         string msg = error.ContainsKey("message") ? (string)error["message"] : "error";
@@ -148,7 +148,7 @@ namespace Para.Client
             return null;
         }
 
-        private string getFullPath(string resourcePath)
+        string getFullPath(string resourcePath)
         {
             if (resourcePath == null)
             {
@@ -161,12 +161,12 @@ namespace Para.Client
             return getApiPath() + resourcePath;
         }
 
-        private static object Deserialize(string json)
+        static object Deserialize(string json)
         {
             return (json != null) ? ToObject(JToken.Parse(json)) : null;
         }
 
-        private static object ToObject(JToken token)
+        static object ToObject(JToken token)
         {
             switch (token.Type)
             {
@@ -181,21 +181,21 @@ namespace Para.Client
             }
         }
 
-        private IRestResponse invokeSignedRequest(Method httpMethod, string endpointURL, string reqPath,
-                            Dictionary<string, string> headers, Dictionary<string, object> paramz, object jsonEntity)
+        IRestResponse invokeSignedRequest(Method httpMethod, string endpointURL, string reqPath,
+			Dictionary<string, string> headers, Dictionary<string, object> paramz, object jsonEntity)
         {
             if (string.IsNullOrEmpty(this.accessKey) || string.IsNullOrEmpty(this.secretKey))
             {
                 throw new Exception("Security credentials are invalid.");
             }
 
-            DefaultRequest req = new DefaultRequest(new ParaRequest(), "para");
+            var req = new DefaultRequest(new ParaRequest(), "para");
             req.Endpoint = new Uri(endpointURL);
             req.ResourcePath = reqPath;
             req.HttpMethod = httpMethod.ToString();
             req.UseQueryString = true;
 
-            RestRequest restReq = new RestRequest(new Uri(endpointURL));
+            var restReq = new RestRequest(new Uri(endpointURL));
             restReq.Method = httpMethod;
             client.BaseUrl = new Uri(this.endpoint + reqPath);
 
@@ -239,12 +239,12 @@ namespace Para.Client
             
             try
             {
-                ParaConfig p = new ParaConfig();
+                var p = new ParaConfig();
                 p.ServiceURL = getEndpoint();
                 p.AuthenticationServiceName = "para";
                 signer.Sign(req, p, null, this.accessKey, this.secretKey);
             }
-            catch (Exception e)
+            catch
             {                
                 return null;
             }
@@ -260,34 +260,34 @@ namespace Para.Client
             return client.Execute(restReq);
         }
 
-        private IRestResponse invokeGet(string resourcepath, Dictionary<string, object> paramz)
+		IRestResponse invokeGet(string resourcepath, Dictionary<string, object> paramz)
         {
             return invokeSignedRequest(Method.GET, getEndpoint(), getFullPath(resourcepath), null, paramz, null);
         }
 
-        private IRestResponse invokePost(string resourcepath, object entity)
+        IRestResponse invokePost(string resourcepath, object entity)
         {
             return invokeSignedRequest(Method.POST, getEndpoint(), getFullPath(resourcepath), null, null, entity);
         }
 
-        private IRestResponse invokePut(string resourcePath, object entity)
+        IRestResponse invokePut(string resourcePath, object entity)
         {
             return invokeSignedRequest(Method.PUT, getEndpoint(), getFullPath(resourcePath), null, null, entity);
         }
 
-        private IRestResponse invokePatch(string resourcePath, object entity)
+        IRestResponse invokePatch(string resourcePath, object entity)
         {
             return invokeSignedRequest(Method.PATCH, getEndpoint(), getFullPath(resourcePath), null, null, entity);
         }
 
-        private IRestResponse invokeDelete(string resourcePath, Dictionary<string, object> paramz)
+		IRestResponse invokeDelete(string resourcePath, Dictionary<string, object> paramz)
         {
             return invokeSignedRequest(Method.DELETE, getEndpoint(), getFullPath(resourcePath), null, paramz, new byte[0]);
         }
 
-        private Dictionary<string, object> pagerToParams(params Pager[] pager)
+        Dictionary<string, object> pagerToParams(params Pager[] pager)
         {
-            Dictionary<string, object> map = new Dictionary<string, object>();
+            var map = new Dictionary<string, object>();
             if (pager != null && pager.Length > 0)
             {
                 Pager p = pager[0];
@@ -305,7 +305,7 @@ namespace Para.Client
             return map;
         }
         
-        private List<ParaObject> getItemsFromList(object res)
+        List<ParaObject> getItemsFromList(object res)
         {
             if (res != null)
             {
@@ -314,15 +314,14 @@ namespace Para.Client
                 {
                     result = (List<object>) res;
                 }
-                else if (res.GetType() == typeof(string))
-                {
-                    result = (List<object>) Deserialize((string) res);
-                }
+                else if (res is string) {
+					result = (List<object>)Deserialize ((string)res);
+				}
 
                 if (result != null && result.Count > 0)
                 {
                     // this isn't very efficient but there's no way to know what type of objects we're reading
-                    List<ParaObject> objects = new List<ParaObject>(result.Count);
+                    var objects = new List<ParaObject>(result.Count);
                     foreach (object properties in result)
                     {
                         if (properties != null)
@@ -336,7 +335,7 @@ namespace Para.Client
             return new List<ParaObject>();
         }
 
-        private List<ParaObject> getItems(object res, params Pager[] pager)
+        List<ParaObject> getItems(object res, params Pager[] pager)
         {
             if (res != null)
             {
@@ -345,10 +344,9 @@ namespace Para.Client
                 {
                     result = (Dictionary<string, object>) res;
                 }
-                else if(res.GetType() == typeof(string))
-                {
-                    result = (Dictionary<string, object>) Deserialize((string) res);
-                }
+				else if (res is string) {
+					result = (Dictionary<string, object>)Deserialize ((string)res);
+				}
 
                 if (result != null && result.Count > 0 && result.ContainsKey("items"))
                 {
@@ -469,7 +467,7 @@ namespace Para.Client
             {
                 return new List<ParaObject>(0);
             }
-            Dictionary<string, object> ids = new Dictionary<string, object>();
+            var ids = new Dictionary<string, object>();
             ids["ids"] = keys;
             return getItemsFromList(getEntity(invokeGet("_batch", ids), true));
     	}
@@ -498,7 +496,7 @@ namespace Para.Client
             {
                 return;
             }
-            Dictionary<string, object> ids = new Dictionary<string, object>();
+            var ids = new Dictionary<string, object>();
             ids["ids"] = keys;
             invokeDelete("_batch", ids);
         }
@@ -530,9 +528,9 @@ namespace Para.Client
         /// <returns>the object if found or null</returns>
         public ParaObject findById(string id)
         {
-            Dictionary<string, object> paramz = new Dictionary<string, object>();
+            var paramz = new Dictionary<string, object>();
 		    paramz["id"] = id;
-            List<ParaObject> list = getItems(find("id", paramz));
+            var list = getItems(find("id", paramz));
             return list.Count == 0 ? null : list[0];
         }
 
@@ -543,7 +541,7 @@ namespace Para.Client
         /// <returns>a list of objects found</returns>
         public List<ParaObject> findByIds(List<string> ids)
         {
-            Dictionary<string, object> paramz = new Dictionary<string, object>();
+            var paramz = new Dictionary<string, object>();
         	paramz["ids"] = ids;
             return getItems(find("ids", paramz));
         }
@@ -560,7 +558,7 @@ namespace Para.Client
         /// <returns>a list of objects found</returns>
         public List<ParaObject> findNearby(string type, string query, int radius, double lat, double lng, params Pager[] pager)
         {
-            Dictionary<string, object> paramz = new Dictionary<string, object>();
+            var paramz = new Dictionary<string, object>();
         	paramz["latlng"] = lat.ToString(CultureInfo.CreateSpecificCulture("en-GB")) + "," + lng.ToString(CultureInfo.CreateSpecificCulture("en-GB"));
         	paramz["radius"] = radius.ToString();
         	paramz["q"] = query;
@@ -579,7 +577,7 @@ namespace Para.Client
         /// <returns>a list of objects found</returns>
         public List<ParaObject> findPrefix(string type, string field, string prefix, params Pager[] pager)
         {
-            Dictionary<string, object> paramz = new Dictionary<string, object>();
+            var paramz = new Dictionary<string, object>();
         	paramz["field"] = field;
         	paramz["prefix"] = prefix;
         	paramz["type"] = type;
@@ -596,7 +594,7 @@ namespace Para.Client
         /// <returns>a list of objects found</returns>
         public List<ParaObject> findQuery(string type, string query, params Pager[] pager)
         {
-            Dictionary<string, object> paramz = new Dictionary<string, object>();
+            var paramz = new Dictionary<string, object>();
             paramz["q"] = query;
             paramz["type"] = type;
             paramz.Concat(pagerToParams(pager));
@@ -614,7 +612,7 @@ namespace Para.Client
         /// <returns>a list of objects found</returns>
         public List<ParaObject> findSimilar(string type, string filterKey, string[] fields, string liketext, params Pager[] pager)
         {
-            Dictionary<string, object> paramz = new Dictionary<string, object>();
+            var paramz = new Dictionary<string, object>();
         	paramz["fields"] = (fields == null) ? null : fields.ToList();
             paramz["filterid"] = filterKey;
             paramz["like"] = liketext;
@@ -632,7 +630,7 @@ namespace Para.Client
         /// <returns>a list of objects found</returns>
         public List<ParaObject> findTagged(string type, string[] tags, params Pager[] pager)
         {
-            Dictionary<string, object> paramz = new Dictionary<string, object>();
+            var paramz = new Dictionary<string, object>();
         	paramz["tags"] = (tags == null) ? null : tags.ToList();
             paramz["type"] = type;
             paramz.Concat(pagerToParams(pager));
@@ -662,7 +660,7 @@ namespace Para.Client
         /// <returns>a list of objects found</returns>
         public List<ParaObject> findTermInList(string type, string field, List<string> terms, params Pager[] pager)
         {
-            Dictionary<string, object> paramz = new Dictionary<string, object>();
+            var paramz = new Dictionary<string, object>();
             paramz["field"] = field;
     		paramz["terms"] = terms;
             paramz["type"] = type;
@@ -684,16 +682,16 @@ namespace Para.Client
             {
                 return new List<ParaObject>(0);
             }
-            Dictionary<string, object> paramz = new Dictionary<string, object>();
+            var paramz = new Dictionary<string, object>();
         	paramz["matchall"] = matchAll.ToString();
-            List<string> list = new List<string>();
+            var list = new List<string>();
             foreach (var term in terms)
             {
                 string key = term.Key;
                 object value = term.Value;
                 if (value != null)
                 {
-                    list.Add(key + SEPARATOR + value.ToString());
+                    list.Add(key + SEPARATOR + value);
                 }
             }
             if (terms.Count > 0)
@@ -715,7 +713,7 @@ namespace Para.Client
         /// <returns>a list of objects found</returns>
         public List<ParaObject> findWildcard(string type, string field, string wildcard, params Pager[] pager)
         {
-            Dictionary<string, object> paramz = new Dictionary<string, object>();
+            var paramz = new Dictionary<string, object>();
             paramz["field"] = field;
             paramz["q"] = wildcard;
             paramz["type"] = type;
@@ -730,9 +728,9 @@ namespace Para.Client
         /// <returns>the number of results found</returns>
         public long getCount(string type)
         {
-            Dictionary<string, object> paramz = new Dictionary<string, object>();
+            var paramz = new Dictionary<string, object>();
             paramz["type"] = type;
-            Pager pager = new Pager();
+            var pager = new Pager();
             getItems(find("count", paramz), pager);
             return pager.count;
         }
@@ -749,15 +747,15 @@ namespace Para.Client
             {
                 return 0L;
             }
-            Dictionary<string, object> paramz = new Dictionary<string, object>();
-            List<string> list = new List<string>();
+            var paramz = new Dictionary<string, object>();
+            var list = new List<string>();
             foreach (var term in terms)
             {
                 string key = term.Key;
                 object value = term.Value;
                 if (value != null)
                 {
-                    list.Add(key + SEPARATOR + value.ToString());
+                    list.Add(key + SEPARATOR + value);
                 }
             }
             if (terms.Count > 0)
@@ -766,14 +764,14 @@ namespace Para.Client
             }
             paramz["type"] = type;
             paramz["count"] = "true";
-            Pager pager = new Pager();
+            var pager = new Pager();
             getItems(find("terms", paramz), pager);
             return pager.count;
         }
 
-        private object find(string queryType, Dictionary<string, object> paramz)
+		object find(string queryType, Dictionary<string, object> paramz)
         {
-            Dictionary<string, object> map = new Dictionary<string, object>();
+            var map = new Dictionary<string, object>();
             if (paramz != null && paramz.Count > 0) {
                 string qType = string.IsNullOrEmpty(queryType) ? "" : "/" + queryType;
                 return getEntity(invokeGet("search" + qType, paramz), true);
@@ -802,9 +800,9 @@ namespace Para.Client
             {
                 return 0L;
             }
-            Dictionary<string, object> paramz = new Dictionary<string, object>();
+            var paramz = new Dictionary<string, object>();
             paramz["count"] = "true";
-            Pager pager = new Pager();
+            var pager = new Pager();
             string url = obj.getObjectURI() + "/links/" + type2;
             getItems(getEntity(invokeGet(url, paramz), true), pager);
         	return pager.count;
@@ -921,10 +919,10 @@ namespace Para.Client
             {
                 return 0L;
             }
-            Dictionary<string, object> paramz = new Dictionary<string, object>();
+            var paramz = new Dictionary<string, object>();
             paramz["count"] = "true";
             paramz["childrenonly"] = "true";
-            Pager pager = new Pager();
+            var pager = new Pager();
             string url = obj.getObjectURI() + "/links/" + type2;
             getItems(getEntity(invokeGet(url, paramz), true), pager);
         	return pager.count;
@@ -943,10 +941,10 @@ namespace Para.Client
             {
                 return new List<ParaObject>(0);
             }
-            Dictionary<string, object> paramz = new Dictionary<string, object>();
+            var paramz = new Dictionary<string, object>();
             paramz["childrenonly"] = "true";
             string url = obj.getObjectURI() + "/links/" + type2;
-            return getItems((Dictionary<string, Object>)getEntity(invokeGet(url, paramz), true), pager);
+            return getItems(getEntity(invokeGet(url, paramz), true), pager);
         }
         
         /// <summary>
@@ -965,7 +963,7 @@ namespace Para.Client
             {
                 return new List<ParaObject>(0);
             }
-            Dictionary<string, object> paramz = new Dictionary<string, object>();
+            var paramz = new Dictionary<string, object>();
             paramz["childrenonly"] = "true";
             paramz["field"] = field;
             paramz["term"] = term;
@@ -984,7 +982,7 @@ namespace Para.Client
             {
                 return;
             }
-            Dictionary<string, object> paramz = new Dictionary<string, object>();
+            var paramz = new Dictionary<string, object>();
             paramz["childrenonly"] = "true";
             string url = obj.getObjectURI() + "/links/" + type2;
             invokeDelete(url, paramz);
@@ -1001,7 +999,7 @@ namespace Para.Client
         public string newId()
         {
             var res = getEntity(invokeGet("utils/newid", null), true);
-        	return res != null ? (string) res : "";
+			return (string) res ?? "";
         }
         
         /// <summary>
@@ -1024,9 +1022,9 @@ namespace Para.Client
         /// <returns>a formatted date</returns>
         public string formatDate(string format, string loc)
         {
-            Dictionary<string, object> paramz = new Dictionary<string, object>();
+            var paramz = new Dictionary<string, object>();
             paramz["format"] = format;
-            paramz["locale"] = (loc == null) ? null : loc;
+			paramz["locale"] = string.IsNullOrEmpty(loc) ? null : loc;
             return (string) getEntity(invokeGet("utils/formatdate", paramz), true);
     	}
         
@@ -1038,7 +1036,7 @@ namespace Para.Client
         /// <returns>a string with dashes</returns>
         public string noSpaces(string str, string replaceWith)
         {
-            Dictionary<string, object> paramz = new Dictionary<string, object>();
+            var paramz = new Dictionary<string, object>();
             paramz["string"] = str;
             paramz["replacement"] = replaceWith;
             return (string) getEntity(invokeGet("utils/nospaces", paramz), true);
@@ -1051,7 +1049,7 @@ namespace Para.Client
         /// <returns>a clean string</returns>
         public string stripAndTrim(string str)
         {
-            Dictionary<string, object> paramz = new Dictionary<string, object>();
+            var paramz = new Dictionary<string, object>();
             paramz["string"] = str;
             return (string) getEntity(invokeGet("utils/nosymbols", paramz), true);
 	    }
@@ -1063,7 +1061,7 @@ namespace Para.Client
         /// <returns>HTML</returns>
         public string markdownToHtml(string markdownstring)
         {
-            Dictionary<string, object> paramz = new Dictionary<string, object>();
+            var paramz = new Dictionary<string, object>();
             paramz["md"] = markdownstring;
             return (string) getEntity(invokeGet("utils/md2html", paramz), true);
     	}
@@ -1075,7 +1073,7 @@ namespace Para.Client
         /// <returns>a string like "5m", "1h"</returns>
         public string approximately(long delta)
         {
-            Dictionary<string, object> paramz = new Dictionary<string, object>();
+            var paramz = new Dictionary<string, object>();
             paramz["delta"] = delta.ToString();
             return (string) getEntity(invokeGet("utils/timeago", paramz), true);
     	}
