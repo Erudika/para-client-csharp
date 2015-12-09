@@ -25,7 +25,7 @@ namespace Para.Client.Tests
         protected static ParaObject a2;
 
 
-        [TestFixtureSetUp]
+        [OneTimeSetUp]
         public static void setUpClass()
         {
             pc = new ParaClient("app:para", "cvGhx6+XXf8NzjOk777H5CIpDYvtIy8zykwar+9E6nsoGDL0P4fVoQ==");
