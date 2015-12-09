@@ -25,10 +25,10 @@ namespace Para.Client.Tests
         protected static ParaObject a2;
 
 
-		[SetUp]
+        [TestFixtureSetUp]
         public static void setUpClass()
         {
-            pc = new ParaClient("app:para", "Ki9naQlGNGLGbY0acuSwJ9y08mTGqqgzCMYgUePzI+egqhEoYzjqpQ==");
+            pc = new ParaClient("app:para", "cvGhx6+XXf8NzjOk777H5CIpDYvtIy8zykwar+9E6nsoGDL0P4fVoQ==");
             pc.setEndpoint("http://localhost:8080");
             if (pc.me() == null) {
                 throw new Exception("Local Para server must be started before testing.");
@@ -379,15 +379,19 @@ namespace Para.Client.Tests
         [Test]
         public void testMisc()
         {
-            string kittenType = "kitten";
-            string KittenType = "Kitten";
-            //Dictionary<string, string> cred = pc.setup();
-            //Assert.IsFalse(cred.ContainsKey("accessKey"));
-
             Dictionary<string, string> types = pc.types();
+            Assert.NotNull(types);
             Assert.IsFalse(types.Count == 0);
             Assert.IsTrue(types.ContainsKey(new ParaObject(null, "user").getPlural()));
 
+            Assert.AreEqual("app:para", pc.me().id);
+        }
+
+        [Test]
+        public void testValidationConstraints()
+        {
+            // Validations
+            string kittenType = "kitten";
             Dictionary<string, object> constraints = pc.validationConstraints();
             Assert.IsFalse(constraints.Count == 0);
             Assert.IsTrue(constraints.ContainsKey("app"));
@@ -396,20 +400,20 @@ namespace Para.Client.Tests
             Dictionary<string, Dictionary<string, Dictionary<string, object>>> constraint = 
                 pc.validationConstraints("app");
             Assert.IsFalse(constraint.Count == 0);
-            Assert.IsTrue(constraint.ContainsKey("App"));
+            Assert.IsTrue(constraint.ContainsKey("app"));
             Assert.AreEqual(1, constraint.Count);
 
             pc.addValidationConstraint(kittenType, "paws", Constraint.required());
             constraint = pc.validationConstraints(kittenType);
-            Assert.IsTrue(constraint[KittenType].ContainsKey("paws"));
+            Assert.IsTrue(constraint[kittenType].ContainsKey("paws"));
 
             ParaObject ct = new ParaObject("felix");
             ct.type = kittenType;
             ParaObject ct2 = null;
-			try {
-				// validation fails
-				ct2 = pc.create (ct);
-			} catch { }
+            try {
+                // validation fails
+                ct2 = pc.create (ct);
+            } catch { }
 
             Assert.IsNull(ct2);
             ct["paws"] = "4";
@@ -417,7 +421,82 @@ namespace Para.Client.Tests
 
             pc.removeValidationConstraint(kittenType, "paws", "required");
             constraint = pc.validationConstraints(kittenType);
-            Assert.IsFalse(constraint[KittenType].Count == 0);
-        }        
+            Assert.IsFalse(constraint[kittenType].Count == 0);
+        }
+
+        [Test]
+        public void testResourcePermissions()
+        {
+            // Permissions
+            var permits = pc.resourcePermissions();
+            Assert.NotNull(permits);
+
+            Assert.IsTrue(pc.grantResourcePermission(null, dogsType, new string[]{}).Count == 0);
+            Assert.IsTrue(pc.grantResourcePermission(" ", "", new string[]{}).Count == 0);
+
+            pc.grantResourcePermission(u1.id, dogsType, new [] {"GET"});
+            permits = pc.resourcePermissions(u1.id);
+            Assert.IsTrue(permits.ContainsKey(u1.id));
+            Assert.IsTrue(permits[u1.id].ContainsKey(dogsType));
+            Assert.IsTrue(pc.isAllowedTo(u1.id, dogsType, "GET"));
+            Assert.IsFalse(pc.isAllowedTo(u1.id, dogsType, "POST"));
+
+            permits = pc.resourcePermissions();
+            Assert.IsTrue(permits.ContainsKey(u1.id));
+            Assert.IsTrue(permits[u1.id].ContainsKey(dogsType));
+
+            pc.revokeResourcePermission(u1.id, dogsType);
+            permits = pc.resourcePermissions(u1.id);
+            Assert.IsFalse(permits[u1.id].ContainsKey(dogsType));
+            Assert.IsFalse(pc.isAllowedTo(u1.id, dogsType, "GET"));
+            Assert.IsFalse(pc.isAllowedTo(u1.id, dogsType, "POST"));
+
+            pc.grantResourcePermission(u2.id, "*", new [] {"POST", "PUT", "PATCH", "DELETE"});
+            Assert.IsTrue(pc.isAllowedTo(u2.id, dogsType, "PUT"));
+            Assert.IsTrue(pc.isAllowedTo(u2.id, dogsType, "PATCH"));
+
+            pc.revokeAllResourcePermissions(u2.id);
+            permits = pc.resourcePermissions();
+            Assert.IsFalse(pc.isAllowedTo(u2.id, dogsType, "PUT"));
+            Assert.IsTrue(permits.ContainsKey(u2.id));
+            Assert.IsTrue(permits[u2.id].Count == 0);
+
+            pc.grantResourcePermission(u1.id, dogsType, new [] {"POST", "PUT", "PATCH", "DELETE"});
+            pc.grantResourcePermission("*", "*", new [] {"GET"});
+            pc.grantResourcePermission("*", catsType, new [] {"POST", "PUT", "PATCH", "DELETE"});
+            // user-specific permissions are in effect
+            Assert.IsTrue(pc.isAllowedTo(u1.id, dogsType, "PUT"));
+            Assert.IsFalse(pc.isAllowedTo(u1.id, dogsType, "GET"));
+            Assert.IsTrue(pc.isAllowedTo(u1.id, catsType, "PUT"));
+            Assert.IsTrue(pc.isAllowedTo(u1.id, catsType, "GET"));
+
+            pc.revokeAllResourcePermissions(u1.id);
+            // user-specific permissions not found so check wildcard
+            Assert.IsFalse(pc.isAllowedTo(u1.id, dogsType, "PUT"));
+            Assert.IsTrue(pc.isAllowedTo(u1.id, dogsType, "GET"));
+            Assert.IsTrue(pc.isAllowedTo(u1.id, catsType, "PUT"));
+            Assert.IsTrue(pc.isAllowedTo(u1.id, catsType, "GET"));
+
+            pc.revokeResourcePermission("*", catsType);
+            // resource-specific permissions not found so check wildcard
+            Assert.IsFalse(pc.isAllowedTo(u1.id, dogsType, "PUT"));
+            Assert.IsFalse(pc.isAllowedTo(u1.id, catsType, "PUT"));
+            Assert.IsTrue(pc.isAllowedTo(u1.id, dogsType, "GET"));
+            Assert.IsTrue(pc.isAllowedTo(u1.id, catsType, "GET"));
+            Assert.IsTrue(pc.isAllowedTo(u2.id, dogsType, "GET"));
+            Assert.IsTrue(pc.isAllowedTo(u2.id, catsType, "GET"));
+
+            pc.revokeAllResourcePermissions("*");
+            pc.revokeAllResourcePermissions(u1.id);
+        }
+
+        [Test]
+        public void testAccessTokens()
+        {
+            Assert.IsNull(pc.getAccessToken());
+            Assert.IsNull(pc.signIn("facebook", "test_token"));
+            pc.signOut();
+            Assert.IsFalse(pc.revokeAllTokens());
+        }
     }
 }

@@ -35,12 +35,17 @@ namespace Para.Client
     /// </summary>
     public class ParaClient
     {
-
+        static readonly DateTime Jan1st1970 = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc);
         static readonly string DEFAULT_ENDPOINT = "https://paraio.com";
         static readonly string DEFAULT_PATH = "/v1/";
+        static readonly string JWT_PATH = "/jwt_auth";
         static readonly string SEPARATOR = ":";
+        static readonly int JWT_REFRESH_INTERVAL_SEC = 60;
         string endpoint;
         string path;
+        string tokenKey;
+        long tokenKeyExpires = -1;
+        long tokenKeyLastRefresh = -1;
         readonly string accessKey;
         readonly string secretKey;
 
@@ -50,6 +55,9 @@ namespace Para.Client
 
         public ParaClient(string accessKey, string secretKey)
         {
+            if (secretKey == null || secretKey.Length < 6) {
+                logger.WriteEntry("Secret key appears to be invalid. Make sure you call 'signIn()' first.");
+            }
             this.accessKey = accessKey;
             this.secretKey = secretKey;
             setEndpoint(DEFAULT_ENDPOINT);
@@ -77,13 +85,13 @@ namespace Para.Client
         /// <returns>the endpoint</returns>
         public string getEndpoint()
         {
-            if (string.IsNullOrEmpty(this.endpoint))
+            if (string.IsNullOrEmpty(endpoint))
             {
                 return DEFAULT_ENDPOINT;
             }
             else
             {
-                return this.endpoint;
+                return endpoint;
             }
         }
 
@@ -102,18 +110,32 @@ namespace Para.Client
         /// <returns>the request path without parameters</returns>
         public string getApiPath()
         {
-            if (string.IsNullOrEmpty(this.path))
+            if (string.IsNullOrEmpty(path))
             {
                 return DEFAULT_PATH;
             }
             else
             {
-                if (!this.path.EndsWith("/"))
+                if (!path.EndsWith("/"))
                 {
-                    this.path += "/";
+                    path += "/";
                 }
-                return this.path;
+                return path;
             }
+        }
+
+        /// <returns>the JWT access token, or null if not signed in</returns>
+        public string getAccessToken() {
+            return tokenKey;
+        }
+
+        /// <summary>
+        /// Clears the JWT token from memory, if such exists.
+        /// </summary>
+        void clearAccessToken() {
+            tokenKey = null;
+            tokenKeyExpires = -1;
+            tokenKeyLastRefresh = -1;
         }
 
         object getEntity(IRestResponse res, bool returnRawJSON)
@@ -150,6 +172,9 @@ namespace Para.Client
 
         string getFullPath(string resourcePath)
         {
+            if (resourcePath != null && resourcePath.StartsWith(JWT_PATH)) {
+                return resourcePath;
+            }
             if (resourcePath == null)
             {
                 resourcePath = "";
@@ -159,6 +184,11 @@ namespace Para.Client
                 resourcePath = resourcePath.Substring(1);
             }
             return getApiPath() + resourcePath;
+        }
+
+        long CurrentTimeMillis()
+        {
+            return (long) (DateTime.UtcNow - Jan1st1970).TotalMilliseconds;
         }
 
         static object Deserialize(string json)
@@ -184,7 +214,7 @@ namespace Para.Client
         IRestResponse invokeSignedRequest(Method httpMethod, string endpointURL, string reqPath,
 			Dictionary<string, string> headers, Dictionary<string, object> paramz, object jsonEntity)
         {
-            if (string.IsNullOrEmpty(this.accessKey) || string.IsNullOrEmpty(this.secretKey))
+            if (string.IsNullOrEmpty(accessKey) || (secretKey == null && tokenKey == null))
             {
                 throw new Exception("Security credentials are invalid.");
             }
@@ -197,7 +227,7 @@ namespace Para.Client
 
             var restReq = new RestRequest(new Uri(endpointURL));
             restReq.Method = httpMethod;
-            client.BaseUrl = new Uri(this.endpoint + reqPath);
+            client.BaseUrl = new Uri(endpoint + reqPath);
 
             if (paramz != null)
             {
@@ -236,19 +266,24 @@ namespace Para.Client
                 req.Headers.Add("Content-Type", "application/json");
                 req.Content = System.Text.Encoding.UTF8.GetBytes(json);
             }
-            
-            try
-            {
-                var p = new ParaConfig();
-                p.ServiceURL = getEndpoint();
-                p.AuthenticationServiceName = "para";
-                signer.Sign(req, p, null, this.accessKey, this.secretKey);
+
+            if (tokenKey != null) {
+                refreshToken();
+                req.Headers.Add("Authorization", "Bearer " + tokenKey);
+            } else {
+                try
+                {
+                    var p = new ParaConfig();
+                    p.ServiceURL = getEndpoint();
+                    p.AuthenticationServiceName = "para";
+                    signer.Sign(req, p, null, accessKey, secretKey);
+                }
+                catch
+                {                
+                    return null;
+                }
             }
-            catch
-            {                
-                return null;
-            }
-                       
+
             if (req.Headers != null)
             {
                 foreach (var header in req.Headers)
@@ -559,7 +594,8 @@ namespace Para.Client
         public List<ParaObject> findNearby(string type, string query, int radius, double lat, double lng, params Pager[] pager)
         {
             var paramz = new Dictionary<string, object>();
-        	paramz["latlng"] = lat.ToString(CultureInfo.CreateSpecificCulture("en-GB")) + "," + lng.ToString(CultureInfo.CreateSpecificCulture("en-GB"));
+        	paramz["latlng"] = lat.ToString(CultureInfo.CreateSpecificCulture("en-GB")) + "," + 
+                lng.ToString(CultureInfo.CreateSpecificCulture("en-GB"));
         	paramz["radius"] = radius.ToString();
         	paramz["q"] = query;
         	paramz["type"] = type;
@@ -1081,16 +1117,7 @@ namespace Para.Client
         /////////////////////////////////////////////
         //				 MISC
         /////////////////////////////////////////////
-        
-        /// <summary>
-        /// First-time setup - creates the root app and returns its credentials.
-        /// </summary>
-        /// <returns>a Dictionary of credentials</returns>
-        internal Dictionary<string, string> setup()
-        {
-            return JsonConvert.DeserializeObject<Dictionary<string, string>>((string)getEntity(invokeGet("_setup", null), true));
-        }
-        
+                
         /// <summary>
         /// Generates a new set of access/secret keys.
         /// Old keys are discarded and invalid after this.
@@ -1168,6 +1195,175 @@ namespace Para.Client
 			return JsonConvert.DeserializeObject<Dictionary<string, object>>
 				((string) getEntity(invokeDelete("_constraints/" + type + "/" + field + "/" + constraintName, null), true));
 		}
+
+        /////////////////////////////////////////////
+        //       Resource Permissions
+        /////////////////////////////////////////////
+    
+        /// <summary>
+        /// Returns the permissions for all subjects and resources for current app.
+        /// </summary>
+        /// <returns>a map of subject ids to resource names to a list of allowed methods</returns>
+        public Dictionary<string, Dictionary<string, List<string>>> resourcePermissions() {
+                return JsonConvert.DeserializeObject<Dictionary<string, Dictionary<string, List<string>>>>
+                    ((string) getEntity(invokeGet("_permissions", null), true));
+        }
+
+        /// <summary>
+        /// Returns only the permissions for a given subject (user) of the current app.
+        /// </summary>
+        /// <returns>a map of subject ids to resource names to a list of allowed methods</returns>
+        /// <param name="subjectid">the subject id (user id)</param>
+        public Dictionary<string, Dictionary<string, List<string>>> resourcePermissions(string subjectid) {
+            return JsonConvert.DeserializeObject<Dictionary<string, Dictionary<string, List<string>>>>
+                ((string) getEntity(invokeGet("_permissions/" + subjectid, null), true));
+        }
+
+        /**
+     * Grants a permission to a subject that allows them to call the specified HTTP methods on a given resource.
+     * @param subjectid subject id (user id)
+     * @param resourceName resource name or object type
+     * @param permission a set of HTTP methods
+     * @return a map of the permissions for this subject id
+     */
+        public Dictionary<string, Dictionary<string, List<string>>> grantResourcePermission(string subjectid, string resourceName,
+            string[] permission) {
+            if (string.IsNullOrEmpty(subjectid) || string.IsNullOrEmpty(resourceName) || permission == null) {
+                return new Dictionary<string, Dictionary<string, List<string>>>();
+            }
+            return JsonConvert.DeserializeObject<Dictionary<string, Dictionary<string, List<string>>>>
+                ((string) getEntity(invokePut("_permissions/" + subjectid + "/" + resourceName, permission), true));
+        }
+
+        /// <summary>
+        /// Revokes a permission for a subject, meaning they no longer will be able to access the given resource.
+        /// </summary>
+        /// <returns>a map of the permissions for this subject id</returns>
+        /// <param name="subjectid">subject id (user id)</param>
+        /// <param name="resourceName">resource name or object type</param>
+        public Dictionary<string, Dictionary<string, List<string>>> revokeResourcePermission(string subjectid, string resourceName) {
+            if (string.IsNullOrEmpty(subjectid) || string.IsNullOrEmpty(resourceName)) {
+                return new Dictionary<string, Dictionary<string, List<string>>>();
+            }
+            return JsonConvert.DeserializeObject<Dictionary<string, Dictionary<string, List<string>>>>
+                ((string) getEntity(invokeDelete("_permissions/" + subjectid + "/" + resourceName, null), true));
+        }
+
+        /// <summary>
+        /// Revokes all permission for a subject.
+        /// </summary>
+        /// <returns>a map of the permissions for this subject id</returns>
+        /// <param name="subjectid">subject id (user id)</param>
+        public Dictionary<string, Dictionary<string, List<string>>> revokeAllResourcePermissions(string subjectid) {
+            if (string.IsNullOrEmpty(subjectid)) {
+                return new Dictionary<string, Dictionary<string, List<string>>>();
+            }
+            return JsonConvert.DeserializeObject<Dictionary<string, Dictionary<string, List<string>>>>
+                ((string) getEntity (invokeDelete ("_permissions/" + subjectid, null), true));
+        }
+
+        /// <summary>
+        /// Checks if a subject is allowed to call method X on resource Y.
+        /// </summary>
+        /// <returns><c>true</c>, if allowed, <c>false</c> otherwise.</returns>
+        /// <param name="subjectid">subject id</param>
+        /// <param name="resourceName">resource name (type)</param>
+        /// <param name="httpMethod">HTTP method name</param>
+        public bool isAllowedTo(string subjectid, string resourceName, string httpMethod) {
+            if (string.IsNullOrEmpty(subjectid) || string.IsNullOrEmpty(resourceName) || string.IsNullOrEmpty(httpMethod)) {
+                return false;
+            }
+            string url = "_permissions/" + subjectid + "/" + resourceName + "/" + httpMethod;
+            return bool.Parse((string) getEntity(invokeGet(url, null), true));
+        }
+
+        /////////////////////////////////////////////
+        //              Access Tokens
+        /////////////////////////////////////////////
+    
+        /// <summary>
+        /// Takes an identity provider access token and fethces the user data from that provider.
+        /// A new {@link  User} object is created if that user doesn't exist.
+        /// Access tokens are returned upon successful authentication using one of the SDKs from
+        /// Facebook, Google, Twitter, etc.
+        /// <b>Note:</b> Twitter uses OAuth 1 and gives you a token and a token secret.
+        /// <b>You must concatenate them like this: <code>{oauth_token}:{oauth_token_secret}</code> and
+        /// use that as the provider access token.</b>
+        /// </summary>
+        /// <returns>a user ParaObject or null if something failed</returns>
+        /// <param name="provider">identity provider, e.g. 'facebook', 'google'...</param>
+        /// <param name="providerToken">access token from a provider like Facebook, Google, Twitter</param>
+        public ParaObject signIn(string provider, string providerToken) {
+            if (!string.IsNullOrEmpty(provider) && !string.IsNullOrEmpty(providerToken)) {
+                var credentials = new Dictionary<string, string>();
+                credentials["appid"] = accessKey;
+                credentials["provider"] = provider;
+                credentials["token"] = providerToken;
+                var res = getEntity(invokePost(JWT_PATH, credentials), true);
+                var result = (res == null) ? null : JsonConvert.DeserializeObject
+                    <Dictionary<string, Dictionary<string, object>>>((string) res);
+                if (result != null && result.ContainsKey("user") && result.ContainsKey("jwt")) {
+                    var jwtData = result["jwt"];
+                    var userData = result["user"];
+                    tokenKey = (string) jwtData["access_token"];
+                    tokenKeyExpires = (long) jwtData["expires"];
+                    ParaObject user = new ParaObject();
+                    user.setFields((Dictionary<string, object>) userData);
+                    return user;
+                } else {
+                    clearAccessToken();
+                }
+            }
+            return null;
+        }
+
+        /// <summary>
+        /// Clears the JWT access token but token is not revoked.
+        /// Tokens can be revoked globally per user with revokeAllTokens().
+        /// </summary>
+        public void signOut() {
+            clearAccessToken();
+        }
+
+        /// <summary>
+        /// Refreshes the JWT access token. This requires a valid existing token.
+        /// Call signIn() first.
+        /// </summary>
+        /// <returns><c>true</c>, if token was refreshed, <c>false</c> otherwise.</returns>
+        protected bool refreshToken() {
+            long now = CurrentTimeMillis();
+            long interval = (JWT_REFRESH_INTERVAL_SEC * 1000);
+            bool notExpired = tokenKeyExpires < 0 && tokenKeyExpires > now;
+            bool canRefresh = tokenKeyLastRefresh < 0 &&
+                ((tokenKeyLastRefresh + interval) < now || (tokenKeyLastRefresh + interval) > tokenKeyExpires);
+            // token present and NOT expired
+            if (tokenKey != null && notExpired && canRefresh) {
+                var res = getEntity(invokeGet(JWT_PATH, null), true);
+                var result = (res == null) ? null : JsonConvert.DeserializeObject
+                    <Dictionary<string, Dictionary<string, object>>>((string) res);
+                if (result != null && result.ContainsKey("user") && result.ContainsKey("jwt")) {
+                    var jwtData = result["jwt"];
+                    tokenKey = (string) jwtData["access_token"];
+                    tokenKeyExpires = (long) jwtData["expires"];
+                    tokenKeyLastRefresh = CurrentTimeMillis();
+                    return true;
+                } else {
+                    clearAccessToken();
+                }
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// Revokes all user tokens for a given user id.
+        /// This is whould be equivalent to "logout everywhere".
+        /// <b>Note:</b> Generating a new API secret on the server will also invalidate all client tokens.
+        /// Requires a valid existing token.
+        /// </summary>
+        /// <returns><c>true</c>, if all token was revoked, <c>false</c> otherwise.</returns>
+        public bool revokeAllTokens() {
+            return getEntity(invokeDelete(JWT_PATH, null), true) != null;
+        }
     }
 
     public class ParaRequest : AmazonWebServiceRequest
