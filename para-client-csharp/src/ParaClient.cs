@@ -40,12 +40,11 @@ namespace Para.Client
         static readonly string DEFAULT_PATH = "/v1/";
         static readonly string JWT_PATH = "/jwt_auth";
         static readonly string SEPARATOR = ":";
-        static readonly int JWT_REFRESH_INTERVAL_SEC = 60;
         string endpoint;
         string path;
         string tokenKey;
         long tokenKeyExpires = -1;
-        long tokenKeyLastRefresh = -1;
+        long tokenKeyNextRefresh = -1;
         readonly string accessKey;
         readonly string secretKey;
 
@@ -130,12 +129,34 @@ namespace Para.Client
         }
 
         /// <summary>
+        /// Sets the JWT access token.
+        /// </summary>
+        /// <param name="token">a valid token.</param>
+        public void setAccessToken(string token) {
+            if (!string.IsNullOrEmpty(token)) {
+                try {
+                    var parts = token.Split('.');
+                    var payload = System.Text.Encoding.UTF8.GetString(Convert.FromBase64String(parts[1]));
+                    var decoded = JsonConvert.DeserializeObject<Dictionary<string, object>>(payload);
+                    if (decoded != null && decoded.ContainsKey("exp")) {
+                        this.tokenKeyExpires = (long) decoded["exp"];
+                        this.tokenKeyNextRefresh = (long) decoded["refresh"];
+                    }
+                } catch {
+                    this.tokenKeyExpires = -1;
+                    this.tokenKeyNextRefresh = -1;
+                }
+            }
+            this.tokenKey = token;
+        }
+
+        /// <summary>
         /// Clears the JWT token from memory, if such exists.
         /// </summary>
         void clearAccessToken() {
             tokenKey = null;
             tokenKeyExpires = -1;
-            tokenKeyLastRefresh = -1;
+            tokenKeyNextRefresh = -1;
         }
 
         object getEntity(IRestResponse res, bool returnRawJSON)
@@ -1307,6 +1328,7 @@ namespace Para.Client
                     var userData = result["user"];
                     tokenKey = (string) jwtData["access_token"];
                     tokenKeyExpires = (long) jwtData["expires"];
+                    tokenKeyNextRefresh = (long) jwtData["refresh"];
                     ParaObject user = new ParaObject();
                     user.setFields((Dictionary<string, object>) userData);
                     return user;
@@ -1332,10 +1354,9 @@ namespace Para.Client
         /// <returns><c>true</c>, if token was refreshed, <c>false</c> otherwise.</returns>
         protected bool refreshToken() {
             long now = CurrentTimeMillis();
-            long interval = (JWT_REFRESH_INTERVAL_SEC * 1000);
             bool notExpired = tokenKeyExpires < 0 && tokenKeyExpires > now;
-            bool canRefresh = tokenKeyLastRefresh < 0 &&
-                ((tokenKeyLastRefresh + interval) < now || (tokenKeyLastRefresh + interval) > tokenKeyExpires);
+            bool canRefresh = tokenKeyNextRefresh < 0 &&
+                (tokenKeyNextRefresh < now || tokenKeyNextRefresh > tokenKeyExpires);
             // token present and NOT expired
             if (tokenKey != null && notExpired && canRefresh) {
                 var res = getEntity(invokeGet(JWT_PATH, null), true);
@@ -1345,7 +1366,7 @@ namespace Para.Client
                     var jwtData = result["jwt"];
                     tokenKey = (string) jwtData["access_token"];
                     tokenKeyExpires = (long) jwtData["expires"];
-                    tokenKeyLastRefresh = CurrentTimeMillis();
+                    tokenKeyNextRefresh = (long) jwtData["refresh"];
                     return true;
                 } else {
                     clearAccessToken();
@@ -1368,7 +1389,7 @@ namespace Para.Client
 
     public class ParaRequest : AmazonWebServiceRequest
     {
-
+        
     }
 
     public class ParaConfig : ClientConfig
