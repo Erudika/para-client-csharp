@@ -289,7 +289,10 @@ namespace Para.Client
             }
 
             if (tokenKey != null) {
-                refreshToken();
+                // make sure you don't create an infinite loop!
+                if (!(httpMethod.ToString() == "GET" && reqPath == JWT_PATH)) {
+                    refreshToken();
+                }
                 req.Headers.Add("Authorization", "Bearer " + tokenKey);
             } else {
                 try
@@ -371,7 +374,7 @@ namespace Para.Client
                     result = (List<object>) res;
                 }
                 else if (res is string) {
-					result = (List<object>)Deserialize ((string)res);
+					result = (List<object>) Deserialize((string)res);
 				}
 
                 if (result != null && result.Count > 0)
@@ -401,7 +404,7 @@ namespace Para.Client
                     result = (Dictionary<string, object>) res;
                 }
 				else if (res is string) {
-					result = (Dictionary<string, object>)Deserialize ((string)res);
+					result = (Dictionary<string, object>) Deserialize((string)res);
 				}
 
                 if (result != null && result.Count > 0 && result.ContainsKey("items"))
@@ -1280,7 +1283,7 @@ namespace Para.Client
                 return new Dictionary<string, Dictionary<string, List<string>>>();
             }
             return JsonConvert.DeserializeObject<Dictionary<string, Dictionary<string, List<string>>>>
-                ((string) getEntity (invokeDelete ("_permissions/" + subjectid, null), true));
+                ((string) getEntity(invokeDelete("_permissions/" + subjectid, null), true));
         }
 
         /// <summary>
@@ -1303,7 +1306,7 @@ namespace Para.Client
         /////////////////////////////////////////////
     
         /// <summary>
-        /// Takes an identity provider access token and fethces the user data from that provider.
+        /// Takes an identity provider access token and fetches the user data from that provider.
         /// A new {@link  User} object is created if that user doesn't exist.
         /// Access tokens are returned upon successful authentication using one of the SDKs from
         /// Facebook, Google, Twitter, etc.
@@ -1377,7 +1380,7 @@ namespace Para.Client
 
         /// <summary>
         /// Revokes all user tokens for a given user id.
-        /// This is whould be equivalent to "logout everywhere".
+        /// This would be equivalent to "logout everywhere".
         /// <b>Note:</b> Generating a new API secret on the server will also invalidate all client tokens.
         /// Requires a valid existing token.
         /// </summary>
