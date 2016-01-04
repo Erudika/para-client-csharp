@@ -28,7 +28,7 @@ namespace Para.Client.Tests
         [OneTimeSetUp]
         public static void setUpClass()
         {
-            pc = new ParaClient("app:para", "cvGhx6+XXf8NzjOk777H5CIpDYvtIy8zykwar+9E6nsoGDL0P4fVoQ==");
+            pc = new ParaClient("app:para", "ThpORpZ35uIJqT8rfOCb9t/5/doGbIUgmeGwO5jjyop85xyOXhx7Pg==");
             pc.setEndpoint("http://localhost:8080");
             if (pc.me() == null) {
                 throw new Exception("Local Para server must be started before testing.");
@@ -421,7 +421,7 @@ namespace Para.Client.Tests
 
             pc.removeValidationConstraint(kittenType, "paws", "required");
             constraint = pc.validationConstraints(kittenType);
-            Assert.IsFalse(constraint[kittenType].Count == 0);
+            Assert.IsFalse(constraint.ContainsKey(kittenType));
         }
 
         [Test]
@@ -458,8 +458,8 @@ namespace Para.Client.Tests
             pc.revokeAllResourcePermissions(u2.id);
             permits = pc.resourcePermissions();
             Assert.IsFalse(pc.isAllowedTo(u2.id, dogsType, "PUT"));
-            Assert.IsTrue(permits.ContainsKey(u2.id));
-            Assert.IsTrue(permits[u2.id].Count == 0);
+            Assert.IsFalse(permits.ContainsKey(u2.id));
+            //Assert.IsTrue(permits[u2.id].Count == 0);
 
             pc.grantResourcePermission(u1.id, dogsType, new [] {"POST", "PUT", "PATCH", "DELETE"});
             pc.grantResourcePermission("*", "*", new [] {"GET"});
