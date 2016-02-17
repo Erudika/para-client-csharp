@@ -28,7 +28,7 @@ namespace Para.Client.Tests
         [OneTimeSetUp]
         public static void setUpClass()
         {
-            pc = new ParaClient("app:para", "ThpORpZ35uIJqT8rfOCb9t/5/doGbIUgmeGwO5jjyop85xyOXhx7Pg==");
+            pc = new ParaClient("app:para", "+cSVOFfp8IZuITzNVdx4GtU1Fim0cpa/ZtbWpvEHtFSOvMSsKGXgkw==");
             pc.setEndpoint("http://localhost:8080");
             if (pc.me() == null) {
                 throw new Exception("Local Para server must be started before testing.");

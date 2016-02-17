@@ -69,6 +69,21 @@ namespace Para.Client
         /// Returns the total sum of all votes for this object.
         /// </summary>
         public int votes { get; set; }
+        /// <summary>
+        /// Gets or sets a value indicating whether this object is stored in DB.
+        /// </summary>
+        /// <value><c>true</c> if stored; otherwise, <c>false</c>.</value>
+        public bool stored { get; set; }
+        /// <summary>
+        /// Gets or sets a value indicating whether this object is indexed.
+        /// </summary>
+        /// <value><c>true</c> if indexed; otherwise, <c>false</c>.</value>
+        public bool indexed { get; set; }
+        /// <summary>
+        /// Gets or sets a value indicating whether this object is cached.
+        /// </summary>
+        /// <value><c>true</c> if cached; otherwise, <c>false</c>.</value>
+        public bool cached { get; set; }
 
         [JsonExtensionData]
         public readonly Dictionary<string, object> properties = new Dictionary<string, object>();
@@ -88,6 +103,9 @@ namespace Para.Client
             if (string.IsNullOrEmpty(type)) this.type = "sysprop";
             this.votes = 0;
             this.name = "ParaObject";
+            this.stored = true;
+            this.indexed = true;
+            this.cached = true;
         }
 
         /// <summary>
