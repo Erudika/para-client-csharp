@@ -4,7 +4,7 @@
 # .NET Client for Para
 
 [![NuGet](https://img.shields.io/nuget/v/para_client_csharp.svg)](https://www.nuget.org/packages/para_client_csharp/)
-
+[![Join the chat at https://gitter.im/Erudika/para](https://badges.gitter.im/Erudika/para.svg)](https://gitter.im/Erudika/para?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
 ## What is this?
 
