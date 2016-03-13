@@ -1,16 +1,16 @@
 ![Logo](https://s3-eu-west-1.amazonaws.com/org.paraio/para.png)
-============================
 
 # .NET Client for Para
 
-[![NuGet](https://img.shields.io/nuget/v/para_client_csharp.svg)](https://www.nuget.org/packages/para_client_csharp/)
+[![NuGet version](https://badge.fury.io/nu/para_client_csharp.svg)](https://badge.fury.io/nu/para_client_csharp)
 [![Join the chat at https://gitter.im/Erudika/para](https://badges.gitter.im/Erudika/para.svg)](https://gitter.im/Erudika/para?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
 ## What is this?
 
-**Para** was designed as a simple and modular back-end framework for object persistence and retrieval.
-It enables your application to store objects directly to a data store (NoSQL) or any relational database (RDBMS)
-and it also automatically indexes those objects and makes them searchable.
+**Para** was designed as a simple and modular backend framework for object persistence and retrieval.
+It helps you build applications faster by taking care of the backend. It works on three levels -
+objects are stored in a NoSQL data store or any old relational database, then automatically indexed
+by a search engine and finally, cached.
 
 This is the .NET client for Para.
 
