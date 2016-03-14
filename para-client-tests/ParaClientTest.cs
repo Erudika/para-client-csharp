@@ -26,10 +26,10 @@ namespace Para.Client.Tests
         protected static ParaObject a2;
 
 
-        [OneTimeSetUp]
+        [TestFixtureSetUp]
         public static void setUpClass()
         {
-            pc = new ParaClient("app:para", "+cSVOFfp8IZuITzNVdx4GtU1Fim0cpa/ZtbWpvEHtFSOvMSsKGXgkw==");
+            pc = new ParaClient("app:para", "gZ81zKW0RwEFYXfiwg/Gk6DVIK1Cwr8DhNH+Njixl8tTMWmoPp5/mA==");
             pc.setEndpoint("http://localhost:8080");
             pc2 = new ParaClient("app:para", null);
             pc2.setEndpoint("http://localhost:8080");
@@ -498,13 +498,13 @@ namespace Para.Client.Tests
             pc.revokeAllResourcePermissions(u1.id);
         }
 
-        [Test]
-        public void testAccessTokens()
-        {
-            Assert.IsNull(pc.getAccessToken());
-            Assert.IsNull(pc.signIn("facebook", "test_token"));
-            pc.signOut();
-            Assert.IsFalse(pc.revokeAllTokens());
-        }
+//        [Test]
+//        public void testAccessTokens()
+//        {
+//            Assert.IsNull(pc.getAccessToken());
+//            Assert.IsNull(pc.signIn("facebook", "test_token"));
+//            pc.signOut();
+//            Assert.IsFalse(pc.revokeAllTokens());
+//        }
     }
 }

@@ -53,15 +53,15 @@ namespace Para.Client
         readonly EventLog logger = new EventLog();
 
         public ParaClient(string accessKey, string secretKey)
-        {
-            if (secretKey == null || secretKey.Length < 6) {
-                logger.WriteEntry("Secret key appears to be invalid. Make sure you call 'signIn()' first.");
-            }
+        {            
             this.accessKey = accessKey;
             this.secretKey = secretKey;
             setEndpoint(DEFAULT_ENDPOINT);
             setApiPath(DEFAULT_PATH);
             logger.Source = "Application";
+            if (secretKey == null || secretKey.Length < 6) {
+                logger.WriteEntry("Secret key appears to be invalid. Make sure you call 'signIn()' first.");
+            }
         }
 
         public void setEndpoint(string endpoint)
@@ -244,7 +244,7 @@ namespace Para.Client
                 if (headers == null) {
                     headers = new Dictionary<string, string>();
                 }
-                headers.Add("Authorization", "Anonymous " + accessKey);
+                headers["Authorization"] = "Anonymous " + accessKey;
                 doSign = false;
             }
 
@@ -283,9 +283,12 @@ namespace Para.Client
                     }
                 }
             }
+
             if (headers != null)
             {
-                req.Headers.Concat(headers).GroupBy(d => d.Key).ToDictionary(d => d.Key, d => d.First().Value);
+                foreach (var key in headers.Keys) {
+                    req.Headers[key] = headers[key];
+                }
             }
             if (jsonEntity != null)
             {
@@ -327,7 +330,6 @@ namespace Para.Client
                     restReq.AddHeader(header.Key, header.Value);
                 }
             }
-
             return client.Execute(restReq);
         }
 
@@ -1281,9 +1283,9 @@ namespace Para.Client
                 return new Dictionary<string, Dictionary<string, List<string>>>();
             }
             if (allowGuestAccess && "*".Equals(subjectid)) {
-                var arr = new string[permission.Count + 1];
+                var arr = new string[permission.Length + 1];
                 permission.CopyTo(arr, 0);
-                arr[permission.Count] = "?";
+                arr[permission.Length] = "?";
                 permission = arr;
             }
             resourcePath = System.Uri.EscapeDataString(resourcePath);
