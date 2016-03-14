@@ -11,6 +11,7 @@ namespace Para.Client.Tests
     {
 
         static ParaClient pc;
+        static ParaClient pc2;
         const string catsType = "cat";
         const string dogsType = "dog";
         const string batsType = "bat";
@@ -30,6 +31,8 @@ namespace Para.Client.Tests
         {
             pc = new ParaClient("app:para", "+cSVOFfp8IZuITzNVdx4GtU1Fim0cpa/ZtbWpvEHtFSOvMSsKGXgkw==");
             pc.setEndpoint("http://localhost:8080");
+            pc2 = new ParaClient("app:para", null);
+            pc2.setEndpoint("http://localhost:8080");
             if (pc.me() == null) {
                 throw new Exception("Local Para server must be started before testing.");
             }
@@ -440,6 +443,11 @@ namespace Para.Client.Tests
             Assert.IsTrue(permits[u1.id].ContainsKey(dogsType));
             Assert.IsTrue(pc.isAllowedTo(u1.id, dogsType, "GET"));
             Assert.IsFalse(pc.isAllowedTo(u1.id, dogsType, "POST"));
+            // anonymous permissions
+            Assert.IsFalse(pc.isAllowedTo("*", "utils/timestamp", "GET"));
+            Assert.IsNotNull(pc.grantResourcePermission("*", "utils/timestamp", new [] {"GET"}, true));
+            Assert.IsTrue(pc2.getTimestamp() > 0);
+            Assert.IsFalse(pc.isAllowedTo("*", "utils/timestamp", "DELETE"));
 
             permits = pc.resourcePermissions();
             Assert.IsTrue(permits.ContainsKey(u1.id));

@@ -235,9 +235,17 @@ namespace Para.Client
         IRestResponse invokeSignedRequest(Method httpMethod, string endpointURL, string reqPath,
 			Dictionary<string, string> headers, Dictionary<string, object> paramz, object jsonEntity)
         {
-            if (string.IsNullOrEmpty(accessKey) || (secretKey == null && tokenKey == null))
+            if (string.IsNullOrEmpty(accessKey))
             {
-                throw new Exception("Security credentials are invalid.");
+                throw new Exception("Blank access key: " + httpMethod + " " + reqPath);
+            }
+            bool doSign = true;
+            if (string.IsNullOrEmpty(secretKey) && string.IsNullOrEmpty(tokenKey)) {
+                if (headers == null) {
+                    headers = new Dictionary<string, string>();
+                }
+                headers.Add("Authorization", "Anonymous " + accessKey);
+                doSign = false;
             }
 
             var req = new DefaultRequest(new ParaRequest(), "para");
@@ -288,13 +296,17 @@ namespace Para.Client
                 req.Content = System.Text.Encoding.UTF8.GetBytes(json);
             }
 
-            if (tokenKey != null) {
+            if (tokenKey != null)
+            {
                 // make sure you don't create an infinite loop!
-                if (!(httpMethod.ToString() == "GET" && reqPath == JWT_PATH)) {
+                if (!(httpMethod.ToString() == "GET" && reqPath == JWT_PATH))
+                {
                     refreshToken();
                 }
                 req.Headers.Add("Authorization", "Bearer " + tokenKey);
-            } else {
+            } 
+            else if (doSign)
+            {
                 try
                 {
                     var p = new ParaConfig();
@@ -1243,20 +1255,40 @@ namespace Para.Client
                 ((string) getEntity(invokeGet("_permissions/" + subjectid, null), true));
         }
 
-        /**
-     * Grants a permission to a subject that allows them to call the specified HTTP methods on a given resource.
-     * @param subjectid subject id (user id)
-     * @param resourceName resource name or object type
-     * @param permission a set of HTTP methods
-     * @return a map of the permissions for this subject id
-     */
-        public Dictionary<string, Dictionary<string, List<string>>> grantResourcePermission(string subjectid, string resourceName,
+        /// <summary>
+        /// Grants a permission to a subject that allows them to call the specified HTTP methods on a given resource.
+        /// </summary>
+        /// <returns>a map of the permissions for this subject id</returns>
+        /// <param name="subjectid">subject id (user id)</param>
+        /// <param name="resourcePath">resource path or object type</param>
+        /// <param name="permission">a set of HTTP methods</param>
+        public Dictionary<string, Dictionary<string, List<string>>> grantResourcePermission(string subjectid, string resourcePath,
             string[] permission) {
-            if (string.IsNullOrEmpty(subjectid) || string.IsNullOrEmpty(resourceName) || permission == null) {
+            return grantResourcePermission(subjectid, resourcePath, permission, false);
+        }
+
+        /// <summary>
+        /// Grants a permission to a subject that allows them to call the specified HTTP methods on a given resource.
+        /// </summary>
+        /// <returns>a map of the permissions for this subject id</returns>
+        /// <param name="subjectid">subject id (user id)</param>
+        /// <param name="resourcePath">resource path or object type</param>
+        /// <param name="permission">a set of HTTP methods</param>
+        /// <param name="allowGuestAccess">if true - all unauthenticated requests will go through, 'false' by default.</param>
+        public Dictionary<string, Dictionary<string, List<string>>> grantResourcePermission(string subjectid, string resourcePath,
+            string[] permission, bool allowGuestAccess) {
+            if (string.IsNullOrEmpty(subjectid) || string.IsNullOrEmpty(resourcePath) || permission == null) {
                 return new Dictionary<string, Dictionary<string, List<string>>>();
             }
+            if (allowGuestAccess && "*".Equals(subjectid)) {
+                var arr = new string[permission.Count + 1];
+                permission.CopyTo(arr, 0);
+                arr[permission.Count] = "?";
+                permission = arr;
+            }
+            resourcePath = System.Uri.EscapeDataString(resourcePath);
             return JsonConvert.DeserializeObject<Dictionary<string, Dictionary<string, List<string>>>>
-                ((string) getEntity(invokePut("_permissions/" + subjectid + "/" + resourceName, permission), true));
+                ((string) getEntity(invokePut("_permissions/" + subjectid + "/" + resourcePath, permission), true));
         }
 
         /// <summary>
@@ -1264,13 +1296,14 @@ namespace Para.Client
         /// </summary>
         /// <returns>a map of the permissions for this subject id</returns>
         /// <param name="subjectid">subject id (user id)</param>
-        /// <param name="resourceName">resource name or object type</param>
-        public Dictionary<string, Dictionary<string, List<string>>> revokeResourcePermission(string subjectid, string resourceName) {
-            if (string.IsNullOrEmpty(subjectid) || string.IsNullOrEmpty(resourceName)) {
+        /// <param name="resourcePath">resource path or object type</param>
+        public Dictionary<string, Dictionary<string, List<string>>> revokeResourcePermission(string subjectid, string resourcePath) {
+            if (string.IsNullOrEmpty(subjectid) || string.IsNullOrEmpty(resourcePath)) {
                 return new Dictionary<string, Dictionary<string, List<string>>>();
             }
+            resourcePath = System.Uri.EscapeDataString(resourcePath);
             return JsonConvert.DeserializeObject<Dictionary<string, Dictionary<string, List<string>>>>
-                ((string) getEntity(invokeDelete("_permissions/" + subjectid + "/" + resourceName, null), true));
+                ((string) getEntity(invokeDelete("_permissions/" + subjectid + "/" + resourcePath, null), true));
         }
 
         /// <summary>
@@ -1291,13 +1324,14 @@ namespace Para.Client
         /// </summary>
         /// <returns><c>true</c>, if allowed, <c>false</c> otherwise.</returns>
         /// <param name="subjectid">subject id</param>
-        /// <param name="resourceName">resource name (type)</param>
+        /// <param name="resourcePath">resource path or object type</param>
         /// <param name="httpMethod">HTTP method name</param>
-        public bool isAllowedTo(string subjectid, string resourceName, string httpMethod) {
-            if (string.IsNullOrEmpty(subjectid) || string.IsNullOrEmpty(resourceName) || string.IsNullOrEmpty(httpMethod)) {
+        public bool isAllowedTo(string subjectid, string resourcePath, string httpMethod) {
+            if (string.IsNullOrEmpty(subjectid) || string.IsNullOrEmpty(resourcePath) || string.IsNullOrEmpty(httpMethod)) {
                 return false;
             }
-            string url = "_permissions/" + subjectid + "/" + resourceName + "/" + httpMethod;
+            resourcePath = System.Uri.EscapeDataString(resourcePath);
+            string url = "_permissions/" + subjectid + "/" + resourcePath + "/" + httpMethod;
             return bool.Parse((string) getEntity(invokeGet(url, null), true));
         }
 
