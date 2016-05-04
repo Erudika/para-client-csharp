@@ -1366,8 +1366,8 @@ namespace Para.Client
                     var jwtData = result["jwt"];
                     var userData = result["user"];
                     tokenKey = (string) jwtData["access_token"];
-                    tokenKeyExpires = (long) jwtData["expires"];
-                    tokenKeyNextRefresh = (long) jwtData["refresh"];
+                    tokenKeyExpires = (long) (jwtData["expires"] ?? -1);
+                    tokenKeyNextRefresh = (long) (jwtData["refresh"] ?? -1);
                     ParaObject user = new ParaObject();
                     user.setFields((Dictionary<string, object>) userData);
                     return user;
@@ -1393,8 +1393,8 @@ namespace Para.Client
         /// <returns><c>true</c>, if token was refreshed, <c>false</c> otherwise.</returns>
         protected bool refreshToken() {
             long now = CurrentTimeMillis();
-            bool notExpired = tokenKeyExpires < 0 && tokenKeyExpires > now;
-            bool canRefresh = tokenKeyNextRefresh < 0 &&
+            bool notExpired = tokenKeyExpires > 0 && tokenKeyExpires > now;
+            bool canRefresh = tokenKeyNextRefresh > 0 &&
                 (tokenKeyNextRefresh < now || tokenKeyNextRefresh > tokenKeyExpires);
             // token present and NOT expired
             if (tokenKey != null && notExpired && canRefresh) {
@@ -1404,8 +1404,8 @@ namespace Para.Client
                 if (result != null && result.ContainsKey("user") && result.ContainsKey("jwt")) {
                     var jwtData = result["jwt"];
                     tokenKey = (string) jwtData["access_token"];
-                    tokenKeyExpires = (long) jwtData["expires"];
-                    tokenKeyNextRefresh = (long) jwtData["refresh"];
+                    tokenKeyExpires = (long) (jwtData["expires"] ?? -1);
+                    tokenKeyNextRefresh = (long) (jwtData["refresh"] ?? -1);
                     return true;
                 } else {
                     clearAccessToken();
