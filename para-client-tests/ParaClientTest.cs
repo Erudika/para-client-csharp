@@ -29,7 +29,7 @@ namespace Para.Client.Tests
         [TestFixtureSetUp]
         public static void setUpClass()
         {
-            pc = new ParaClient("app:para", "gZ81zKW0RwEFYXfiwg/Gk6DVIK1Cwr8DhNH+Njixl8tTMWmoPp5/mA==");
+            pc = new ParaClient("app:para", "YkJRXg7sItVW+dP0M0jfsz+RxBWvAw20ge9qmAp/idJaz4VxlZQD9g==");
             pc.setEndpoint("http://localhost:8080");
             pc2 = new ParaClient("app:para", null);
             pc2.setEndpoint("http://localhost:8080");

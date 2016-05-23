@@ -45,8 +45,8 @@ namespace Para.Client
         string tokenKey;
         long tokenKeyExpires = -1;
         long tokenKeyNextRefresh = -1;
-        readonly string accessKey;
-        readonly string secretKey;
+        string accessKey;
+        string secretKey;
 
         readonly AWS4Signer signer = new AWS4Signer();
         readonly RestClient client = new RestClient();
@@ -139,15 +139,15 @@ namespace Para.Client
                     var payload = System.Text.Encoding.UTF8.GetString(Convert.FromBase64String(parts[1]));
                     var decoded = JsonConvert.DeserializeObject<Dictionary<string, object>>(payload);
                     if (decoded != null && decoded.ContainsKey("exp")) {
-                        this.tokenKeyExpires = (long) decoded["exp"];
-                        this.tokenKeyNextRefresh = (long) decoded["refresh"];
+                        tokenKeyExpires = (long)decoded ["exp"];
+                        tokenKeyNextRefresh = (long)decoded ["refresh"];
                     }
                 } catch {
-                    this.tokenKeyExpires = -1;
-                    this.tokenKeyNextRefresh = -1;
+                    tokenKeyExpires = -1;
+                    tokenKeyNextRefresh = -1;
                 }
             }
-            this.tokenKey = token;
+            tokenKey = token;
         }
 
         /// <summary>
@@ -387,7 +387,8 @@ namespace Para.Client
                 {
                     result = (List<object>) res;
                 }
-                else if (res is string) {
+                else if (res is string)
+                {
 					result = (List<object>) Deserialize((string)res);
 				}
 
@@ -417,7 +418,8 @@ namespace Para.Client
                 {
                     result = (Dictionary<string, object>) res;
                 }
-				else if (res is string) {
+				else if (res is string) 
+                {
 					result = (Dictionary<string, object>) Deserialize((string)res);
 				}
 
@@ -603,8 +605,8 @@ namespace Para.Client
         {
             var paramz = new Dictionary<string, object>();
 		    paramz["id"] = id;
-            var list = getItems(find("id", paramz));
-            return list.Count == 0 ? null : list[0];
+            var items = getItems(find("id", paramz));
+            return items.Count == 0 ? null : items[0];
         }
 
         /// <summary>
@@ -758,19 +760,19 @@ namespace Para.Client
             }
             var paramz = new Dictionary<string, object>();
         	paramz["matchall"] = matchAll.ToString();
-            var list = new List<string>();
+            var termz = new List<string>();
             foreach (var term in terms)
             {
                 string key = term.Key;
                 object value = term.Value;
                 if (value != null)
                 {
-                    list.Add(key + SEPARATOR + value);
+                    termz.Add(key + SEPARATOR + value);
                 }
             }
             if (terms.Count > 0)
             {
-        		paramz["terms"] = list;
+        		paramz["terms"] = termz;
             }
         	paramz["type"] = type;
         	paramz.Concat(pagerToParams(pager));
@@ -822,19 +824,19 @@ namespace Para.Client
                 return 0L;
             }
             var paramz = new Dictionary<string, object>();
-            var list = new List<string>();
+            var termz = new List<string>();
             foreach (var term in terms)
             {
                 string key = term.Key;
                 object value = term.Value;
                 if (value != null)
                 {
-                    list.Add(key + SEPARATOR + value);
+                    termz.Add(key + SEPARATOR + value);
                 }
             }
             if (terms.Count > 0)
             {
-        		paramz["terms"] = list;
+        		paramz["terms"] = termz;
             }
             paramz["type"] = type;
             paramz["count"] = "true";
@@ -1163,7 +1165,12 @@ namespace Para.Client
         /// <returns>a Dictionary of new credentials</returns>
         public Dictionary<string, string> newKeys()
         {
-            return JsonConvert.DeserializeObject<Dictionary<string, string>>((string) getEntity(invokePost("_newkeys", null), true));
+            var keys = JsonConvert.DeserializeObject<Dictionary<string, string>>((string) 
+                getEntity(invokePost("_newkeys", null), true));
+            if (keys != null && keys.ContainsKey("secretKey")) {
+                secretKey = keys["secretKey"];
+            }
+            return keys;
         }
         
         /// <summary>
@@ -1288,7 +1295,7 @@ namespace Para.Client
                 arr[permission.Length] = "?";
                 permission = arr;
             }
-            resourcePath = System.Uri.EscapeDataString(resourcePath);
+            resourcePath = Uri.EscapeDataString(resourcePath);
             return JsonConvert.DeserializeObject<Dictionary<string, Dictionary<string, List<string>>>>
                 ((string) getEntity(invokePut("_permissions/" + subjectid + "/" + resourcePath, permission), true));
         }
@@ -1303,7 +1310,7 @@ namespace Para.Client
             if (string.IsNullOrEmpty(subjectid) || string.IsNullOrEmpty(resourcePath)) {
                 return new Dictionary<string, Dictionary<string, List<string>>>();
             }
-            resourcePath = System.Uri.EscapeDataString(resourcePath);
+            resourcePath = Uri.EscapeDataString(resourcePath);
             return JsonConvert.DeserializeObject<Dictionary<string, Dictionary<string, List<string>>>>
                 ((string) getEntity(invokeDelete("_permissions/" + subjectid + "/" + resourcePath, null), true));
         }
@@ -1332,7 +1339,7 @@ namespace Para.Client
             if (string.IsNullOrEmpty(subjectid) || string.IsNullOrEmpty(resourcePath) || string.IsNullOrEmpty(httpMethod)) {
                 return false;
             }
-            resourcePath = System.Uri.EscapeDataString(resourcePath);
+            resourcePath = Uri.EscapeDataString(resourcePath);
             string url = "_permissions/" + subjectid + "/" + resourcePath + "/" + httpMethod;
             return bool.Parse((string) getEntity(invokeGet(url, null), true));
         }
@@ -1368,10 +1375,12 @@ namespace Para.Client
                     tokenKey = (string) jwtData["access_token"];
                     tokenKeyExpires = (long) (jwtData["expires"] ?? -1);
                     tokenKeyNextRefresh = (long) (jwtData["refresh"] ?? -1);
-                    ParaObject user = new ParaObject();
-                    user.setFields((Dictionary<string, object>) userData);
+                    var user = new ParaObject();
+                    user.setFields(userData);
                     return user;
-                } else {
+                }
+                else
+                {
                     clearAccessToken();
                 }
             }
@@ -1407,7 +1416,9 @@ namespace Para.Client
                     tokenKeyExpires = (long) (jwtData["expires"] ?? -1);
                     tokenKeyNextRefresh = (long) (jwtData["refresh"] ?? -1);
                     return true;
-                } else {
+                }
+                else
+                {
                     clearAccessToken();
                 }
             }
