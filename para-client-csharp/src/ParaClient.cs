@@ -678,6 +678,24 @@ namespace Para.Client
         }
 
         /// <summary>
+        /// Searches within a nested field. The objects of the given type must contain a nested field "nstd".
+        /// </summary>
+        /// <param name="type">the type of object to search for.</param>
+        /// <param name="field">the name of the field to target (within a nested field "nstd")</param>
+        /// <param name="query">the query string</param>
+        /// <param name="pager">a Pager</param>
+        /// <returns>a list of objects found</returns>
+        public List<ParaObject> findNestedQuery(string type, string field, string query, params Pager[] pager)
+        {
+            var paramz = new Dictionary<string, object>();
+            paramz["q"] = query;
+            paramz["field"] = field;
+            paramz["type"] = type;
+            paramz.Concat(pagerToParams(pager));
+            return getItems(find("nested", paramz), pager);
+        }
+
+        /// <summary>
         /// Searches for objects that have similar property values to a given text. A "find like this" query.
         /// </summary>
         /// <param name="type">the type of object to search for.</param>
@@ -898,9 +916,33 @@ namespace Para.Client
                 return new List<ParaObject>(0);
             }
             string url = obj.getObjectURI() + "/links/" + type2;
-            return getItems(getEntity(invokeGet(url, null), true), pager);
+            return getItems(getEntity(invokeGet(url, pagerToParams(pager)), true), pager);
     	}
-        
+
+        /// <summary>
+        /// Searches through all linked objects in many-to-many relationships.
+        /// </summary>
+        /// <param name="obj">the object to execute this method on</param>
+        /// <param name="type2">type of linked objects to search for</param>
+        /// <param name="field">the name of the field to target (within a nested field "nstd")</param>
+        /// <param name="query">a query string</param> 
+        /// <param name="pager">a Pager</param>
+        /// <returns>a list of linked objects</returns>
+        public List<ParaObject> findLinkedObjects(ParaObject obj, string type2, string field, string query, 
+            params Pager[] pager)
+        {
+            if (obj == null || obj.id == null || type2 == null)
+            {
+                return new List<ParaObject>(0);
+            }
+            var paramz = new Dictionary<string, object>();
+            paramz["field"] = field;
+            paramz["q"] = string.IsNullOrEmpty(query) ? "*" : query;
+            paramz.Concat(pagerToParams(pager));
+            string url = obj.getObjectURI() + "/links/" + type2;
+            return getItems(getEntity(invokeGet(url, paramz), true), pager);
+        }
+
         /// <summary>
         /// Checks if this object is linked to another.
         /// </summary>
@@ -1019,6 +1061,7 @@ namespace Para.Client
             }
             var paramz = new Dictionary<string, object>();
             paramz["childrenonly"] = "true";
+            paramz.Concat(pagerToParams(pager));
             string url = obj.getObjectURI() + "/links/" + type2;
             return getItems(getEntity(invokeGet(url, paramz), true), pager);
         }
@@ -1043,6 +1086,30 @@ namespace Para.Client
             paramz["childrenonly"] = "true";
             paramz["field"] = field;
             paramz["term"] = term;
+            paramz.Concat(pagerToParams(pager));
+            string url = obj.getObjectURI() + "/links/" + type2;
+            return getItems(getEntity(invokeGet(url, paramz), true), pager);
+        }
+
+        /// <summary>
+        /// Search through all child objects. Only searches child objects directly
+        /// connected to this parent via the {@code parentid} field.
+        /// </summary>
+        /// <param name="obj">the object to execute this method on</param>
+        /// <param name="type2">the type of children to look for</param>
+        /// <param name="query">a query string</param> 
+        /// <param name="pager">a Pager</param>
+        /// <returns>a list of ParaObject in a one-to-many relationship with this object</returns>
+        public List<ParaObject> findChildren(ParaObject obj, string type2, string query, params Pager[] pager)
+        {
+            if (obj == null || obj.id == null || type2 == null)
+            {
+                return new List<ParaObject>(0);
+            }
+            var paramz = new Dictionary<string, object>();
+            paramz["childrenonly"] = "true";
+            paramz["q"] = string.IsNullOrEmpty(query) ? "*" : query;
+            paramz.Concat(pagerToParams(pager));
             string url = obj.getObjectURI() + "/links/" + type2;
             return getItems(getEntity(invokeGet(url, paramz), true), pager);
         }
