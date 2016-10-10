@@ -29,7 +29,7 @@ namespace Para.Client.Tests
         [OneTimeSetUp]
         public static void setUpClass()
         {
-            pc = new ParaClient("app:para", "4U6nCAD+JscgLEgi7Apubfnt+TLkFUsX+HfDm7J10SBcHA8YRGY+zA==");
+            pc = new ParaClient("app:para", "ynJInh32zam7MzjBwBqwIVYtvm+tnsbBP1cpcq7PWmFhAmPsdua7HQ==");
             pc.setEndpoint("http://localhost:8080");
             pc2 = new ParaClient("app:para", null);
             pc2.setEndpoint("http://localhost:8080");
@@ -503,7 +503,7 @@ namespace Para.Client.Tests
         {
             Dictionary<string, object> settings = pc.appSettings();
             Assert.NotNull(settings);
-            Assert.True(settings.Count == 0);
+            Assert.IsTrue(settings.Count == 0);
 
             pc.addAppSetting("", null);
             pc.addAppSetting(" ", " ");
@@ -512,17 +512,18 @@ namespace Para.Client.Tests
             pc.addAppSetting("prop2", true);
             pc.addAppSetting("prop3", "string");
 
-            Assert.Equals(3, pc.appSettings().Count);
-            Assert.Equals(pc.appSettings(), pc.appSettings(null));
-            Assert.Equals(new Dictionary<string, object>{{"value", 1}}, pc.appSettings("prop1"));
-            Assert.Equals(new Dictionary<string, object>{{"value", true}}, pc.appSettings("prop2"));
-            Assert.Equals(new Dictionary<string, object>{{"value", "string"}}, pc.appSettings("prop3"));
+            var x = pc.appSettings("prop1")["value"];
+            Assert.IsTrue(pc.appSettings().Count == 3);
+            Assert.IsTrue(pc.appSettings().Count == pc.appSettings(null).Count);
+            Assert.IsTrue(pc.appSettings("prop1")["value"].Equals(1L));
+            Assert.IsTrue(pc.appSettings("prop2")["value"].Equals(true));
+            Assert.IsTrue(pc.appSettings("prop3")["value"].Equals("string"));
 
             pc.removeAppSetting("prop3");
             pc.removeAppSetting(" ");
             pc.removeAppSetting(null);
-            Assert.True(pc.appSettings("prop3").Count == 0);
-            Assert.Equals(2, pc.appSettings().Count);
+            Assert.IsTrue(pc.appSettings("prop3").Count == 0);
+            Assert.IsTrue(pc.appSettings().Count == 2);
             pc.removeAppSetting("prop2");
             pc.removeAppSetting("prop1");
         }

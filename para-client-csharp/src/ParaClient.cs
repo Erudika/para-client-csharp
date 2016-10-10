@@ -1434,7 +1434,7 @@ namespace Para.Client
                 return appSettings();
             }
             return JsonConvert.DeserializeObject<Dictionary<string, object>>
-                ((string) getEntity(invokeGet("_settings" + key, null), true));
+                ((string) getEntity(invokeGet("_settings/" + key, null), true));
         }
 
         /// <summary>
@@ -1444,7 +1444,7 @@ namespace Para.Client
         /// <param name="value">a value</param>
         public void addAppSetting(string key, object value) {
             if (!string.IsNullOrEmpty(key) && value != null) {
-                invokePut("_settings" + key, value);
+                invokePut("_settings/" + key, new Dictionary<string, object> { { "value", value } });
             }
         }
 
@@ -1454,7 +1454,7 @@ namespace Para.Client
         /// <param name="key">a key</param>
         public void removeAppSetting(string key) {
             if (!string.IsNullOrEmpty(key)) {
-                invokeDelete("_settings" + key, null);
+                invokeDelete("_settings/" + key, null);
             }
         }
 
