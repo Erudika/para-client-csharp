@@ -1412,6 +1412,53 @@ namespace Para.Client
         }
 
         /////////////////////////////////////////////
+        //       Resource Permissions
+        /////////////////////////////////////////////
+
+        /// <summary>
+        /// Returns the map containing app-specific settings.
+        /// </summary>
+        /// <returns>a map.</returns>
+        public Dictionary<string, object> appSettings() {
+            return JsonConvert.DeserializeObject<Dictionary<string, object>>
+                ((string) getEntity(invokeGet("_settings", null), true));
+        }
+
+        /// <summary>
+        /// Returns the value of a specific app setting (property).
+        /// </summary>
+        /// <returns>a map with a single entry {value: value}.</returns>
+        /// <param name="key">a key</param>
+        public Dictionary<string, object> appSettings(string key) {
+            if (string.IsNullOrEmpty (key)) {
+                return appSettings();
+            }
+            return JsonConvert.DeserializeObject<Dictionary<string, object>>
+                ((string) getEntity(invokeGet("_settings" + key, null), true));
+        }
+
+        /// <summary>
+        /// Adds or overwrites an app-specific setting.
+        /// </summary>
+        /// <param name="key">a key</param>
+        /// <param name="value">a value</param>
+        public void addAppSetting(string key, object value) {
+            if (!string.IsNullOrEmpty(key) && value != null) {
+                invokePut("_settings" + key, value);
+            }
+        }
+
+        /// <summary>
+        /// Removes an app-specific setting.
+        /// </summary>
+        /// <param name="key">a key</param>
+        public void removeAppSetting(string key) {
+            if (!string.IsNullOrEmpty(key)) {
+                invokeDelete("_settings" + key, null);
+            }
+        }
+
+        /////////////////////////////////////////////
         //              Access Tokens
         /////////////////////////////////////////////
     

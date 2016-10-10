@@ -498,6 +498,35 @@ namespace Para.Client.Tests
             pc.revokeAllResourcePermissions(u1.id);
         }
 
+        [Test]
+        public void testAppSettings()
+        {
+            Dictionary<string, object> settings = pc.appSettings();
+            Assert.NotNull(settings);
+            Assert.True(settings.Count == 0);
+
+            pc.addAppSetting("", null);
+            pc.addAppSetting(" ", " ");
+            pc.addAppSetting(null, " ");
+            pc.addAppSetting("prop1", 1);
+            pc.addAppSetting("prop2", true);
+            pc.addAppSetting("prop3", "string");
+
+            Assert.Equals(3, pc.appSettings().Count);
+            Assert.Equals(pc.appSettings(), pc.appSettings(null));
+            Assert.Equals(new Dictionary<string, object>{{"value", 1}}, pc.appSettings("prop1"));
+            Assert.Equals(new Dictionary<string, object>{{"value", true}}, pc.appSettings("prop2"));
+            Assert.Equals(new Dictionary<string, object>{{"value", "string"}}, pc.appSettings("prop3"));
+
+            pc.removeAppSetting("prop3");
+            pc.removeAppSetting(" ");
+            pc.removeAppSetting(null);
+            Assert.True(pc.appSettings("prop3").Count == 0);
+            Assert.Equals(2, pc.appSettings().Count);
+            pc.removeAppSetting("prop2");
+            pc.removeAppSetting("prop1");
+        }
+
 //        [Test]
 //        public void testAccessTokens()
 //        {
