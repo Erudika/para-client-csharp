@@ -29,7 +29,7 @@ namespace Para.Client.Tests
         [OneTimeSetUp]
         public static void setUpClass()
         {
-            pc = new ParaClient("app:para", "ynJInh32zam7MzjBwBqwIVYtvm+tnsbBP1cpcq7PWmFhAmPsdua7HQ==");
+            pc = new ParaClient("app:para", "o24K97DuMnRQkI5tGmuQcLiPzWEeoZBQ2FGJdac/ekujQ//lK4LmVw==");
             pc.setEndpoint("http://localhost:8080");
             pc2 = new ParaClient("app:para", null);
             pc2.setEndpoint("http://localhost:8080");
@@ -425,6 +425,18 @@ namespace Para.Client.Tests
             pc.removeValidationConstraint(kittenType, "paws", "required");
             constraint = pc.validationConstraints(kittenType);
             Assert.IsFalse(constraint.ContainsKey(kittenType));
+
+            // votes
+            Assert.IsTrue(pc.voteUp(ct, u.id));
+            Assert.IsFalse(pc.voteUp(ct, u.id));
+            Assert.IsTrue(pc.voteDown(ct, u.id));
+            Assert.IsTrue(pc.voteDown(ct, u.id));
+            Assert.IsFalse(pc.voteDown(ct, u.id));
+            pc.delete(ct);
+            pc.delete(new ParaObject("vote:" + u.id + ":" + ct.id, "vote"));
+
+            Assert.IsNotEmpty(pc.getServerVersion());
+            Assert.AreNotEqual("unknown", pc.getServerVersion());
         }
 
         [Test]

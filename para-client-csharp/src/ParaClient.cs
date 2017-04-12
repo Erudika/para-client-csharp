@@ -123,8 +123,24 @@ namespace Para.Client
             }
         }
 
+        /// <summary>
+        /// Gets the Para server version.
+        /// </summary>
+        /// <returns>the version of Para server</returns>
+        public string getServerVersion()
+        {
+            Dictionary<string, object> res = JsonConvert.DeserializeObject<Dictionary<string, object>>(
+                (string)getEntity(invokeGet("", null), true));
+            if (res == null || string.IsNullOrEmpty((String) res["version"])) {
+                return "unknown";
+            } else {
+                return (String) res["version"];
+            }
+        }
+
         /// <returns>the JWT access token, or null if not signed in</returns>
-        public string getAccessToken() {
+        public string getAccessToken()
+        {
             return tokenKey;
         }
 
@@ -132,7 +148,8 @@ namespace Para.Client
         /// Sets the JWT access token.
         /// </summary>
         /// <param name="token">a valid token.</param>
-        public void setAccessToken(string token) {
+        public void setAccessToken(string token)
+        {
             if (!string.IsNullOrEmpty(token)) {
                 try {
                     var parts = token.Split('.');
@@ -153,7 +170,8 @@ namespace Para.Client
         /// <summary>
         /// Clears the JWT token from memory, if such exists.
         /// </summary>
-        void clearAccessToken() {
+        void clearAccessToken()
+        {
             tokenKey = null;
             tokenKeyExpires = -1;
             tokenKeyNextRefresh = -1;
@@ -196,7 +214,7 @@ namespace Para.Client
             if (resourcePath != null && resourcePath.StartsWith(JWT_PATH)) {
                 return resourcePath;
             }
-            if (resourcePath == null)
+            if (string.IsNullOrEmpty(resourcePath))
             {
                 resourcePath = "";
             }
@@ -1258,6 +1276,57 @@ namespace Para.Client
         	return (ParaObject) getEntity(invokeGet("_me", null), false);
         }
 
+        /// <summary>
+        /// Returns a User or an App that is currently authenticated.
+        /// </summary>
+        /// <param name="accessToken">a valid JWT access token</param>
+        /// <returns>User or App object or null</returns>
+        public ParaObject me(string accessToken)
+        {
+            if (!string.IsNullOrEmpty(accessToken))
+            {
+                var headers = new Dictionary<string, string>();
+                headers["Authorization"] = accessToken.StartsWith("Bearer") ? accessToken : "Bearer " + accessToken;
+                IRestResponse res = invokeSignedRequest(Method.GET, getEndpoint(), getFullPath("_me"), headers, null, null);
+                return (ParaObject) getEntity(res, false);
+            }
+            return me();
+        }
+
+        /// <summary>
+        /// Upvote an object and register the vote in DB.
+        /// </summary>
+        /// <returns><c>true</c>, if vote was successful, <c>false</c> otherwise.</returns>
+        /// <param name="obj">the object to receive +1 votes</param>
+        /// <param name="voterid">the userid of the voter</param>
+        public bool voteUp(ParaObject obj, string voterid)
+        {
+            if (obj == null || string.IsNullOrEmpty(voterid))
+            {
+                return false;
+            }
+            var entity = new Dictionary<string, object>();
+            entity["_voteup"] = voterid;
+            return bool.Parse((string) getEntity(invokePatch(obj.type + "/" + obj.id, entity), true));
+        }
+
+        /// <summary>
+        /// Downvote an object and register the vote in DB.
+        /// </summary>
+        /// <returns><c>true</c>, if vote was successful, <c>false</c> otherwise.</returns>
+        /// <param name="obj">the object to receive +1 votes</param>
+        /// <param name="voterid">the userid of the voter</param>
+        public bool voteDown(ParaObject obj, string voterid)
+        {
+            if (obj == null || string.IsNullOrEmpty(voterid))
+            {
+                return false;
+            }
+            var entity = new Dictionary<string, object>();
+            entity["_votedown"] = voterid;
+            return bool.Parse((string) getEntity(invokePatch(obj.type + "/" + obj.id, entity), true));
+        }
+
 		/////////////////////////////////////////////
 		//		 Validation Constraints
 		/////////////////////////////////////////////
@@ -1474,7 +1543,7 @@ namespace Para.Client
         /// <returns>a user ParaObject or null if something failed</returns>
         /// <param name="provider">identity provider, e.g. 'facebook', 'google'...</param>
         /// <param name="providerToken">access token from a provider like Facebook, Google, Twitter</param>
-        public ParaObject signIn(string provider, string providerToken) {
+        public ParaObject signIn(string provider, string providerToken, bool rememberJWT) {
             if (!string.IsNullOrEmpty(provider) && !string.IsNullOrEmpty(providerToken)) {
                 var credentials = new Dictionary<string, string>();
                 credentials["appid"] = accessKey;
@@ -1485,12 +1554,14 @@ namespace Para.Client
                     <Dictionary<string, Dictionary<string, object>>>((string) res);
                 if (result != null && result.ContainsKey("user") && result.ContainsKey("jwt")) {
                     var jwtData = result["jwt"];
-                    var userData = result["user"];
-                    tokenKey = (string) jwtData["access_token"];
-                    tokenKeyExpires = (long) (jwtData["expires"] ?? -1);
-                    tokenKeyNextRefresh = (long) (jwtData["refresh"] ?? -1);
+                    if (rememberJWT)
+                    {
+                        tokenKey = (string)jwtData["access_token"];
+                        tokenKeyExpires = (long)(jwtData["expires"] ?? -1);
+                        tokenKeyNextRefresh = (long)(jwtData["refresh"] ?? -1);
+                    }
                     var user = new ParaObject();
-                    user.setFields(userData);
+                    user.setFields(result["user"]);
                     return user;
                 }
                 else
@@ -1499,6 +1570,17 @@ namespace Para.Client
                 }
             }
             return null;
+        }
+
+        /// <summary>
+        /// #see cref="ParaClient.signIn(string provider, string providerToken, bool rememberJWT)"/>
+        /// </summary>
+        /// <returns>User, App or null</returns>
+        /// <param name="provider">Provider.</param>
+        /// <param name="providerToken">Provider token.</param>
+        public ParaObject signIn(string provider, string providerToken)
+        {
+            return signIn(provider, providerToken, true);
         }
 
         /// <summary>
