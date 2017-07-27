@@ -29,7 +29,7 @@ namespace Para.Client.Tests
         [OneTimeSetUp]
         public static void setUpClass()
         {
-            pc = new ParaClient("app:para", "o24K97DuMnRQkI5tGmuQcLiPzWEeoZBQ2FGJdac/ekujQ//lK4LmVw==");
+            pc = new ParaClient("app:para", "RmMPnM9hqaCgxMCxI9rreIX6Zl9ZW8EHqT8MpHcsW0NhyDm5Yb391w==");
             pc.setEndpoint("http://localhost:8080");
             pc2 = new ParaClient("app:para", null);
             pc2.setEndpoint("http://localhost:8080");
@@ -70,10 +70,10 @@ namespace Para.Client.Tests
             a2.creatorid = t.id;
 
             s1 = new ParaObject("s1");
-            s1.name = "This is a little test sentence. Testing, one, two, three.";
+            s1["text"] = "This is a little test sentence. Testing, one, two, three.";
 
             s2 = new ParaObject("s2");
-            s2.name = "We are testing this thing. This sentence is a test. One, two.";
+            s2["text"] = "We are testing this thing. This sentence is a test. One, two.";
 
             pc.createAll(new List<ParaObject> { u, u1, u2, t, s1, s2, a1, a2 });
             Thread.Sleep(1000);
@@ -240,13 +240,13 @@ namespace Para.Client.Tests
 
             Assert.IsTrue(pc.findPrefix(null, null, "").Count == 0);
             Assert.IsTrue(pc.findPrefix("", "null", "xx").Count == 0);
-            Assert.IsFalse(pc.findPrefix(u.type, "name", "ann").Count == 0);
+            Assert.IsFalse(pc.findPrefix(u.type, "name", "Ann").Count == 0);
 
             Assert.IsFalse(pc.findQuery(null, null).Count == 0);
             Assert.IsFalse(pc.findQuery("", "*").Count == 0);
             Assert.AreEqual(2, pc.findQuery(a1.type, "country:US").Count);
-            Assert.IsFalse(pc.findQuery(u.type, "ann").Count == 0);
-            Assert.IsFalse(pc.findQuery(u.type, "Ann").Count == 0);
+            Assert.IsFalse(pc.findQuery(u.type, "Ann*").Count == 0);
+            Assert.IsFalse(pc.findQuery(u.type, "Ann*").Count == 0);
             Assert.IsTrue(pc.findQuery(null, "*").Count > 4);
 
             Pager p = new Pager();
@@ -257,7 +257,7 @@ namespace Para.Client.Tests
 
             Assert.IsTrue(pc.findSimilar(t.type, "", null, null).Count == 0);
             Assert.IsTrue(pc.findSimilar(t.type, "", new string[0], "").Count == 0);
-            res = pc.findSimilar(s1.type, s1.id, new [] { "name" }, s1.name);
+            res = pc.findSimilar(s1.type, s1.id, new [] { "properties.text" }, (string) s1["text"]);
             Assert.IsFalse(res.Count == 0);
             Assert.AreEqual(s2.id, res[0].id);
 
@@ -311,7 +311,7 @@ namespace Para.Client.Tests
 
             Assert.IsTrue(pc.findWildcard(u.type, null, null).Count == 0);
             Assert.IsTrue(pc.findWildcard(u.type, "", "").Count == 0);
-            Assert.IsFalse(pc.findWildcard(u.type, "name", "an*").Count == 0);
+            Assert.IsFalse(pc.findWildcard(u.type, "name", "An*").Count == 0);
 
             Assert.IsTrue(pc.getCount(null) > 4);
             Assert.AreNotEqual(0, pc.getCount(""));
@@ -372,7 +372,7 @@ namespace Para.Client.Tests
             string st1 = pc.stripAndTrim(" %^&*( cool )		@!");
             Assert.AreEqual(st1, "cool");
 
-            string md1 = pc.markdownToHtml("#hello **test**");
+            string md1 = pc.markdownToHtml("# hello **test**");
             Assert.AreEqual(md1, "<h1>hello <strong>test</strong></h1>\n");
 
             string ht1 = pc.approximately(15000);
@@ -536,8 +536,7 @@ namespace Para.Client.Tests
             pc.removeAppSetting(null);
             Assert.IsTrue(pc.appSettings("prop3").Count == 0);
             Assert.IsTrue(pc.appSettings().Count == 2);
-            pc.removeAppSetting("prop2");
-            pc.removeAppSetting("prop1");
+            pc.setAppSettings(new Dictionary<string, object>(0));
         }
 
 //        [Test]

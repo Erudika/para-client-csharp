@@ -885,8 +885,15 @@ namespace Para.Client
         {
             var map = new Dictionary<string, object>();
             if (paramz != null && paramz.Count > 0) {
-                string qType = string.IsNullOrEmpty(queryType) ? "" : "/" + queryType;
-                return getEntity(invokeGet("search" + qType, paramz), true);
+                string qType = string.IsNullOrEmpty(queryType) ? "/default" : "/" + queryType;
+                if (!paramz.ContainsKey("type") || string.IsNullOrEmpty((string) paramz["type"]))
+                {
+                    return getEntity(invokeGet("search" + qType, paramz), true);
+                }
+                else
+                {
+                    return getEntity(invokeGet(paramz["type"] + "/search" + qType, paramz), true);
+                }
         	}
             else
             {
@@ -1514,6 +1521,18 @@ namespace Para.Client
         public void addAppSetting(string key, object value) {
             if (!string.IsNullOrEmpty(key) && value != null) {
                 invokePut("_settings/" + key, new Dictionary<string, object> { { "value", value } });
+            }
+        }
+
+        /// <summary>
+        /// Overwrites all app-specific settings.
+        /// </summary>
+        /// <param name="settings">a key-value map of properties</param>
+        public void setAppSettings(Dictionary<string, object> settings)
+        {
+            if (settings != null)
+            {
+                invokePut("_settings", settings);
             }
         }
 
