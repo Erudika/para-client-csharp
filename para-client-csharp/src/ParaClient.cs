@@ -177,7 +177,13 @@ namespace Para.Client
             tokenKeyNextRefresh = -1;
         }
 
-        object getEntity(IRestResponse res, bool returnRawJSON)
+        /// <summary>
+        /// Deserializes a IRestResponse object to POJO of some type.
+        /// </summary>
+        /// <returns>A ParaObject.</returns>
+        /// <param name="res">response</param>
+        /// <param name="returnRawJSON">If set to <c>true</c> returns the raw JSON string.</param>
+        public object getEntity(IRestResponse res, bool returnRawJSON)
         {
             if (res != null)
             {
@@ -209,7 +215,12 @@ namespace Para.Client
             return null;
         }
 
-        string getFullPath(string resourcePath)
+        /// <summary>
+        /// Returns the full resource path, e.g. "/v1/path".
+        /// </summary>
+        /// <returns>The full resource path, e.g. "/v1/path".</returns>
+        /// <param name="resourcePath">API subpath.</param>
+        protected string getFullPath(string resourcePath)
         {
             if (resourcePath != null && resourcePath.StartsWith(JWT_PATH)) {
                 return resourcePath;
@@ -235,7 +246,7 @@ namespace Para.Client
             return (json != null) ? ToObject(JToken.Parse(json)) : null;
         }
 
-        static object ToObject(JToken token)
+        protected static object ToObject(JToken token)
         {
             switch (token.Type)
             {
@@ -250,7 +261,7 @@ namespace Para.Client
             }
         }
 
-        IRestResponse invokeSignedRequest(Method httpMethod, string endpointURL, string reqPath,
+        protected IRestResponse invokeSignedRequest(Method httpMethod, string endpointURL, string reqPath,
 			Dictionary<string, string> headers, Dictionary<string, object> paramz, object jsonEntity)
         {
             if (string.IsNullOrEmpty(accessKey))
@@ -351,32 +362,67 @@ namespace Para.Client
             return client.Execute(restReq);
         }
 
-		IRestResponse invokeGet(string resourcepath, Dictionary<string, object> paramz)
+        /// <summary>
+        /// Invoke a GET request to the Para API.
+        /// </summary>
+        /// <returns>response object</returns>
+        /// <param name="resourcePath">the subpath after '/v1/', should not start with '/'</param>
+        /// <param name="paramz">query parameters</param>
+		public IRestResponse invokeGet(string resourcePath, Dictionary<string, object> paramz)
         {
-            return invokeSignedRequest(Method.GET, getEndpoint(), getFullPath(resourcepath), null, paramz, null);
+            return invokeSignedRequest(Method.GET, getEndpoint(), getFullPath(resourcePath), null, paramz, null);
         }
 
-        IRestResponse invokePost(string resourcepath, object entity)
+        /// <summary>
+        /// Invoke a POST request to the Para API.
+        /// </summary>
+        /// <returns>response object</returns>
+        /// <param name="resourcePath">the subpath after '/v1/', should not start with '/'</param>
+        /// <param name="entity">request body</param>
+        public IRestResponse invokePost(string resourcePath, object entity)
         {
-            return invokeSignedRequest(Method.POST, getEndpoint(), getFullPath(resourcepath), null, null, entity);
+            return invokeSignedRequest(Method.POST, getEndpoint(), getFullPath(resourcePath), null, null, entity);
         }
 
-        IRestResponse invokePut(string resourcePath, object entity)
+        /// <summary>
+        /// Invoke a PUT request to the Para API.
+        /// </summary>
+        /// <returns>response object</returns>
+        /// <param name="resourcePath">the subpath after '/v1/', should not start with '/'</param>
+        /// <param name="entity">request body</param>
+        public IRestResponse invokePut(string resourcePath, object entity)
         {
             return invokeSignedRequest(Method.PUT, getEndpoint(), getFullPath(resourcePath), null, null, entity);
         }
 
-        IRestResponse invokePatch(string resourcePath, object entity)
+        /// <summary>
+        /// Invoke a PATCH request to the Para API.
+        /// </summary>
+        /// <returns>response object</returns>
+        /// <param name="resourcePath">the subpath after '/v1/', should not start with '/'</param>
+        /// <param name="entity">request body</param>
+        public IRestResponse invokePatch(string resourcePath, object entity)
         {
             return invokeSignedRequest(Method.PATCH, getEndpoint(), getFullPath(resourcePath), null, null, entity);
         }
 
-		IRestResponse invokeDelete(string resourcePath, Dictionary<string, object> paramz)
+        /// <summary>
+        /// Invoke a PATCH request to the Para API.
+        /// </summary>
+        /// <returns>response object</returns>
+        /// <param name="resourcePath">the subpath after '/v1/', should not start with '/'</param>
+        /// <param name="paramz">query parameters</param>
+		public IRestResponse invokeDelete(string resourcePath, Dictionary<string, object> paramz)
         {
             return invokeSignedRequest(Method.DELETE, getEndpoint(), getFullPath(resourcePath), null, paramz, new byte[0]);
         }
 
-        Dictionary<string, object> pagerToParams(params Pager[] pager)
+        /// <summary>
+        /// Converts a Pager object to query parameters.
+        /// </summary>
+        /// <returns>list of query parameters</returns>
+        /// <param name="pager">a Pager</param>
+        public Dictionary<string, object> pagerToParams(params Pager[] pager)
         {
             var map = new Dictionary<string, object>();
             if (pager != null && pager.Length > 0)
@@ -387,6 +433,10 @@ namespace Para.Client
                     map["page"] = p.page.ToString();
                     map["desc"] = p.desc.ToString();
                     map["limit"] = p.limit.ToString();
+                    if (p.lastKey != null)
+                    {
+                        map["lastKey"] = p.lastKey;
+                    }
                     if (p.sortby != null)
                     {
                         map["sort"] = p.sortby;
@@ -395,8 +445,13 @@ namespace Para.Client
             }
             return map;
         }
-        
-        List<ParaObject> getItemsFromList(object res)
+
+        /// <summary>
+        /// Deserializes ParaObjects from a JSON array (the "items:[]" field in search results).
+        /// </summary>
+        /// <returns>a list of deserialized maps</returns>
+        /// <param name="res">a list of ParaObjects</param>
+        public List<ParaObject> getItemsFromList(object res)
         {
             if (res != null)
             {
@@ -427,7 +482,13 @@ namespace Para.Client
             return new List<ParaObject>();
         }
 
-        List<ParaObject> getItems(object res, params Pager[] pager)
+        /// <summary>
+        /// Converts a list of Maps to a List of ParaObjects, at a given path within the JSON tree structure.
+        /// </summary>
+        /// <returns>a list of ParaObjects</returns>
+        /// <param name="res">the response body for an API request</param>
+        /// <param name="pager">a Pager</param>
+        public List<ParaObject> getItems(object res, string at, params Pager[] pager)
         {
             if (res != null)
             {
@@ -441,16 +502,28 @@ namespace Para.Client
 					result = (Dictionary<string, object>) Deserialize((string)res);
 				}
 
-                if (result != null && result.Count > 0 && result.ContainsKey("items"))
+                if (result != null && result.Count > 0 && at != null && result.ContainsKey(at))
                 {
-                    if (pager != null && pager.Length > 0 && pager[0] != null && result.ContainsKey("totalHits"))
+                    if (pager != null && pager.Length > 0 && pager[0] != null)
                     {
-                        pager[0].count = (long) result["totalHits"];
+                        if (result.ContainsKey("totalHits"))
+                        {
+							pager[0].count = (long) result["totalHits"];
+                        }
+                        if (result.ContainsKey("lastKey"))
+                        {
+                            pager[0].lastKey = (string) result["lastKey"];
+                        }
                     }
-                    return getItemsFromList(result["items"]);
+                    return getItemsFromList(result[at]);
                 }
             }
             return new List<ParaObject>();
+        }
+
+        private List<ParaObject> getItems(object res, params Pager[] pager)
+        {
+            return getItems(res, "items", pager);
         }
 
         /////////////////////////////////////////////
