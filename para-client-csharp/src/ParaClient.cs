@@ -206,9 +206,14 @@ namespace Para.Client
                 {
                     var error = (res.Content != null) ?
                             JsonConvert.DeserializeObject<Dictionary<string, object>>(res.Content) : null;
-                    if (error != null && error.ContainsKey("code")) {
+                    if (error != null && error.ContainsKey("code"))
+                    {
                         string msg = error.ContainsKey("message") ? (string)error["message"] : "error";
                         logger.WriteEntry(msg + " - " + error["code"]);
+                    }
+                    else
+                    {
+                        logger.WriteEntry(res.StatusCode + " - " + res.StatusDescription);
                     }
                 }
             }
