@@ -70,6 +70,10 @@ namespace Para.Client
         /// </summary>
         public int votes { get; set; }
         /// <summary>
+        /// Returns the version of this object.
+        /// </summary>
+        public int version { get; set; }
+        /// <summary>
         /// Gets or sets a value indicating whether this object is stored in DB.
         /// </summary>
         /// <value><c>true</c> if stored; otherwise, <c>false</c>.</value>
@@ -102,6 +106,7 @@ namespace Para.Client
             this.type = type;
             if (string.IsNullOrEmpty(type)) this.type = "sysprop";
             this.votes = 0;
+            this.version = 0;
             this.name = "ParaObject";
             this.stored = true;
             this.indexed = true;
