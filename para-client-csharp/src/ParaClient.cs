@@ -1412,6 +1412,28 @@ namespace Para.Client
             return bool.Parse((string) getEntity(invokePatch(obj.type + "/" + obj.id, entity), true));
         }
 
+        /// <summary>
+        /// Rebuilds the entire search index.
+        /// </summary>
+        /// <returns>a response object with properties "tookMillis" and "reindexed"</returns>
+        public Dictionary<string, string> rebuildIndex()
+        {
+            return JsonConvert.DeserializeObject<Dictionary<string, string>>((string) getEntity(invokePost("_reindex", null), true));
+        }
+
+        /// <summary>
+        /// Rebuilds the entire search index.
+        /// </summary>
+        /// <returns>a response object with properties "tookMillis" and "reindexed"</returns>
+        /// <param name="destinationIndex">an existing index as destination</param>
+        public Dictionary<string, string> rebuildIndex(string destinationIndex)
+        {
+            var paramz = new Dictionary<string, object>();
+            paramz["destinationIndex"] = destinationIndex;
+            IRestResponse res = invokeSignedRequest(Method.POST, getEndpoint(), getFullPath("_reindex"), null, paramz, null);
+            return JsonConvert.DeserializeObject<Dictionary<string, string>>((string) getEntity(res, true));
+        }
+
 		/////////////////////////////////////////////
 		//		 Validation Constraints
 		/////////////////////////////////////////////

@@ -2,7 +2,7 @@
 <package >
   <metadata>
     <id>para_client_csharp</id>
-    <version>1.29.1</version>
+    <version>1.30.0</version>
     <title>para-client-csharp</title>
     <authors>albogdano</authors>
     <owners>Erudika</owners>
@@ -20,11 +20,6 @@
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <licenseUrl>http://opensource.org/licenses/Apache-2.0</licenseUrl>
     <copyright>Copyright 2018 Erudika</copyright>
-    <dependencies>
-        <group targetFramework="net40">
-          <dependency id="log4net" version="1.2.10" />
-        </group>
-    </dependencies>
     <references></references>
     <tags>backend,para,cloud,api,client</tags>
   </metadata>  
