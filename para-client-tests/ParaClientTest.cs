@@ -385,7 +385,7 @@ namespace Para.Client.Tests
             Dictionary<string, string> types = pc.types();
             Assert.NotNull(types);
             Assert.IsFalse(types.Count == 0);
-            Assert.IsTrue(types.ContainsKey(new ParaObject(null, "user").getPlural()));
+            Assert.IsTrue(types.ContainsValue(new ParaObject(null, "user").type));
 
             Assert.AreEqual("app:para", pc.me().id);
         }

@@ -549,11 +549,11 @@ namespace Para.Client
             }
             if (string.IsNullOrEmpty(obj.id) || string.IsNullOrEmpty(obj.type))
             {
-                return (ParaObject) getEntity(invokePost(obj.type, obj), false);
+                return (ParaObject) getEntity(invokePost(Uri.EscapeDataString(obj.type), obj), false);
             }
             else
             {
-                return (ParaObject) getEntity(invokePut(obj.type + "/" + obj.id, obj), false);
+                return (ParaObject) getEntity(invokePut(obj.getObjectURI(), obj), false);
             }
         }
 
@@ -569,7 +569,8 @@ namespace Para.Client
             {
                 return null;
             }
-            return (ParaObject) getEntity(invokeGet(type + "/" + id, null), false);
+            return (ParaObject) getEntity(invokeGet(Uri.EscapeDataString(type) + "/" +
+                Uri.EscapeDataString(id), null), false);
         }
 
         /// <summary>
@@ -583,7 +584,7 @@ namespace Para.Client
             {
                 return null;
             }
-            return (ParaObject) getEntity(invokeGet("_id/" + id, null), false);
+            return (ParaObject) getEntity(invokeGet("_id/" + Uri.EscapeDataString(id), null), false);
         }
         
         /// <summary>
@@ -685,7 +686,7 @@ namespace Para.Client
             {
                 return new List<ParaObject>(0);
             }
-            return getItems(getEntity(invokeGet(type, pagerToParams(pager)), true), pager);
+            return getItems(getEntity(invokeGet(Uri.EscapeDataString(type), pagerToParams(pager)), true), pager);
     	}
 
         /////////////////////////////////////////////
@@ -1000,7 +1001,7 @@ namespace Para.Client
             var paramz = new Dictionary<string, object>();
             paramz["count"] = "true";
             var pager = new Pager();
-            string url = obj.getObjectURI() + "/links/" + type2;
+            string url = obj.getObjectURI() + "/links/" + Uri.EscapeDataString(type2);
             getItems(getEntity(invokeGet(url, paramz), true), pager);
         	return pager.count;
         }
@@ -1018,7 +1019,7 @@ namespace Para.Client
             {
                 return new List<ParaObject>(0);
             }
-            string url = obj.getObjectURI() + "/links/" + type2;
+            string url = obj.getObjectURI() + "/links/" + Uri.EscapeDataString(type2);
             return getItems(getEntity(invokeGet(url, pagerToParams(pager)), true), pager);
     	}
 
@@ -1042,7 +1043,7 @@ namespace Para.Client
             paramz["field"] = field;
             paramz["q"] = string.IsNullOrEmpty(query) ? "*" : query;
             paramz.Concat(pagerToParams(pager));
-            string url = obj.getObjectURI() + "/links/" + type2;
+            string url = obj.getObjectURI() + "/links/" + Uri.EscapeDataString(type2);
             return getItems(getEntity(invokeGet(url, paramz), true), pager);
         }
 
@@ -1059,7 +1060,7 @@ namespace Para.Client
             {
                 return false;
             }
-            string url = obj.getObjectURI() + "/links/" + type2 + "/" + id2;
+            string url = obj.getObjectURI() + "/links/" + Uri.EscapeDataString(type2) + "/" + Uri.EscapeDataString(id2);
             return bool.Parse((string) getEntity(invokeGet(url, null), true));
     	}
         
@@ -1092,7 +1093,7 @@ namespace Para.Client
             {
                 return null;
             }
-            string url = obj.getObjectURI() + "/links/" + id2;
+            string url = obj.getObjectURI() + "/links/" + Uri.EscapeDataString(id2);
             return (string) getEntity(invokePost(url, null), true);
     	}
         
@@ -1109,7 +1110,7 @@ namespace Para.Client
             {
                 return;
             }
-            string url = obj.getObjectURI() + "/links/" + type2 + "/" + id2;
+            string url = obj.getObjectURI() + "/links/" + Uri.EscapeDataString(type2) + "/" + Uri.EscapeDataString(id2);
             invokeDelete(url, null);
         }
         
@@ -1144,7 +1145,7 @@ namespace Para.Client
             paramz["count"] = "true";
             paramz["childrenonly"] = "true";
             var pager = new Pager();
-            string url = obj.getObjectURI() + "/links/" + type2;
+            string url = obj.getObjectURI() + "/links/" + Uri.EscapeDataString(type2);
             getItems(getEntity(invokeGet(url, paramz), true), pager);
         	return pager.count;
         }
@@ -1165,7 +1166,7 @@ namespace Para.Client
             var paramz = new Dictionary<string, object>();
             paramz["childrenonly"] = "true";
             paramz.Concat(pagerToParams(pager));
-            string url = obj.getObjectURI() + "/links/" + type2;
+            string url = obj.getObjectURI() + "/links/" + Uri.EscapeDataString(type2);
             return getItems(getEntity(invokeGet(url, paramz), true), pager);
         }
         
@@ -1190,7 +1191,7 @@ namespace Para.Client
             paramz["field"] = field;
             paramz["term"] = term;
             paramz.Concat(pagerToParams(pager));
-            string url = obj.getObjectURI() + "/links/" + type2;
+            string url = obj.getObjectURI() + "/links/" + Uri.EscapeDataString(type2);
             return getItems(getEntity(invokeGet(url, paramz), true), pager);
         }
 
@@ -1213,7 +1214,7 @@ namespace Para.Client
             paramz["childrenonly"] = "true";
             paramz["q"] = string.IsNullOrEmpty(query) ? "*" : query;
             paramz.Concat(pagerToParams(pager));
-            string url = obj.getObjectURI() + "/links/" + type2;
+            string url = obj.getObjectURI() + "/links/" + Uri.EscapeDataString(type2);
             return getItems(getEntity(invokeGet(url, paramz), true), pager);
         }
         
@@ -1230,7 +1231,7 @@ namespace Para.Client
             }
             var paramz = new Dictionary<string, object>();
             paramz["childrenonly"] = "true";
-            string url = obj.getObjectURI() + "/links/" + type2;
+            string url = obj.getObjectURI() + "/links/" + Uri.EscapeDataString(type2);
             invokeDelete(url, paramz);
         }
 
@@ -1392,7 +1393,7 @@ namespace Para.Client
             }
             var entity = new Dictionary<string, object>();
             entity["_voteup"] = voterid;
-            return bool.Parse((string) getEntity(invokePatch(obj.type + "/" + obj.id, entity), true));
+            return bool.Parse((string) getEntity(invokePatch(obj.getObjectURI(), entity), true));
         }
 
         /// <summary>
@@ -1409,7 +1410,7 @@ namespace Para.Client
             }
             var entity = new Dictionary<string, object>();
             entity["_votedown"] = voterid;
-            return bool.Parse((string) getEntity(invokePatch(obj.type + "/" + obj.id, entity), true));
+            return bool.Parse((string) getEntity(invokePatch(obj.getObjectURI(), entity), true));
         }
 
         /// <summary>
@@ -1455,7 +1456,7 @@ namespace Para.Client
 		public Dictionary<string, Dictionary<string, Dictionary<string, object>>> validationConstraints(string type)
 		{
 			return JsonConvert.DeserializeObject<Dictionary<string, Dictionary<string, Dictionary<string, object>>>>
-				((string) getEntity(invokeGet("_constraints/" + type, null), true));
+				((string) getEntity(invokeGet("_constraints/" + Uri.EscapeDataString(type), null), true));
 		}
 
 		/// <summary>
@@ -1468,7 +1469,7 @@ namespace Para.Client
 		public Dictionary<string, Dictionary<string, Dictionary<string, object>>> addValidationConstraint(string type, string field, Constraint c)
 		{
 			return JsonConvert.DeserializeObject<Dictionary<string, Dictionary<string, Dictionary<string, object>>>> 
-				((string) getEntity(invokePut("_constraints/" + type + "/" + field + "/" + c.name, c.payload), true));
+				((string) getEntity(invokePut("_constraints/" + Uri.EscapeDataString(type) + "/" + field + "/" + c.name, c.payload), true));
 		}
 
 		/// <summary>
@@ -1481,7 +1482,7 @@ namespace Para.Client
 		public Dictionary<string, object> removeValidationConstraint(string type, string field, string constraintName)
 		{
 			return JsonConvert.DeserializeObject<Dictionary<string, object>>
-				((string) getEntity(invokeDelete("_constraints/" + type + "/" + field + "/" + constraintName, null), true));
+				((string) getEntity(invokeDelete("_constraints/" + Uri.EscapeDataString(type) + "/" + field + "/" + constraintName, null), true));
 		}
 
         /////////////////////////////////////////////
@@ -1504,7 +1505,7 @@ namespace Para.Client
         /// <param name="subjectid">the subject id (user id)</param>
         public Dictionary<string, Dictionary<string, List<string>>> resourcePermissions(string subjectid) {
             return JsonConvert.DeserializeObject<Dictionary<string, Dictionary<string, List<string>>>>
-                ((string) getEntity(invokeGet("_permissions/" + subjectid, null), true));
+                ((string) getEntity(invokeGet("_permissions/" + Uri.EscapeDataString(subjectid), null), true));
         }
 
         /// <summary>
@@ -1540,7 +1541,7 @@ namespace Para.Client
             }
             resourcePath = Uri.EscapeDataString(resourcePath);
             return JsonConvert.DeserializeObject<Dictionary<string, Dictionary<string, List<string>>>>
-                ((string) getEntity(invokePut("_permissions/" + subjectid + "/" + resourcePath, permission), true));
+                ((string) getEntity(invokePut("_permissions/" + Uri.EscapeDataString(subjectid) + "/" + resourcePath, permission), true));
         }
 
         /// <summary>
@@ -1555,7 +1556,7 @@ namespace Para.Client
             }
             resourcePath = Uri.EscapeDataString(resourcePath);
             return JsonConvert.DeserializeObject<Dictionary<string, Dictionary<string, List<string>>>>
-                ((string) getEntity(invokeDelete("_permissions/" + subjectid + "/" + resourcePath, null), true));
+                ((string) getEntity(invokeDelete("_permissions/" + Uri.EscapeDataString(subjectid) + "/" + resourcePath, null), true));
         }
 
         /// <summary>
@@ -1568,7 +1569,7 @@ namespace Para.Client
                 return new Dictionary<string, Dictionary<string, List<string>>>();
             }
             return JsonConvert.DeserializeObject<Dictionary<string, Dictionary<string, List<string>>>>
-                ((string) getEntity(invokeDelete("_permissions/" + subjectid, null), true));
+                ((string) getEntity(invokeDelete("_permissions/" + Uri.EscapeDataString(subjectid), null), true));
         }
 
         /// <summary>
@@ -1583,7 +1584,7 @@ namespace Para.Client
                 return false;
             }
             resourcePath = Uri.EscapeDataString(resourcePath);
-            string url = "_permissions/" + subjectid + "/" + resourcePath + "/" + httpMethod;
+            string url = "_permissions/" + Uri.EscapeDataString(subjectid) + "/" + resourcePath + "/" + httpMethod;
             return bool.Parse((string) getEntity(invokeGet(url, null), true));
         }
 

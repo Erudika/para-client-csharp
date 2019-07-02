@@ -114,24 +114,13 @@ namespace Para.Client
         }
 
         /// <summary>
-        /// The plural name of the object. For example: user - users.
-        /// </summary>
-        /// <returns>a string</returns>
-        public string getPlural()
-        {
-            return (this.type == null) ? this.type :
-						(this.type.Last() == 's') ? this.type + "es" :
-						(this.type.Last() == 'y') ? this.type.Remove(this.type.Length - 1, 1) + "ies" : this.type + "s";
-        }
-
-        /// <summary>
         /// The URI of this object. For example: /users/123.
         /// </summary>
         /// <returns>the URI string</returns>
         public string getObjectURI()
         {
-		    string def = "/" + getPlural();
-            return (this.id != null) ? def + "/" + this.id : def;
+		    string def = "/" + Uri.EscapeDataString(this.type);
+            return (this.id != null) ? def + "/" + Uri.EscapeDataString(this.id) : def;
         }
 
         public object this[string name]
