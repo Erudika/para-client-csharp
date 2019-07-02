@@ -1,4 +1,4 @@
-version: 1.30.{build}
+version: 1.32.{build}
 skip_non_tags: true
 os: Visual Studio 2015
 build:
