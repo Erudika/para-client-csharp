@@ -22,11 +22,12 @@ using Amazon.Runtime.Internal;
 using Amazon.Runtime;
 using RestSharp;
 using System.Net;
-using System.Diagnostics;
 using Newtonsoft.Json;
 using System.Linq;
 using Newtonsoft.Json.Linq;
 using System.Globalization;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Console;
 
 namespace Para.Client
 {
@@ -50,25 +51,26 @@ namespace Para.Client
 
         readonly AWS4Signer signer = new AWS4Signer();
         readonly RestClient client = new RestClient();
-        readonly EventLog logger = new EventLog();
+        readonly ILogger logger;
 
         public ParaClient(string accessKey, string secretKey)
-        {            
+        {
             this.accessKey = accessKey;
             this.secretKey = secretKey;
             setEndpoint(DEFAULT_ENDPOINT);
             setApiPath(DEFAULT_PATH);
-            logger.Source = "Application";
+            var loggerFactory = LoggerFactory.Create(builder => builder.AddConsole());
+            logger = loggerFactory.CreateLogger<ParaClient>();
             if (secretKey == null || secretKey.Length < 6) {
-                logger.WriteEntry("Secret key appears to be invalid. Make sure you call 'signIn()' first.");
+                logger.LogInformation("Secret key appears to be invalid. Make sure you call 'signIn()' first.");
             }
         }
 
         public void setEndpoint(string endpoint)
         {
-            this.endpoint = endpoint;            
+            this.endpoint = endpoint;
         }
-        
+
         /// <summary>
         /// Returns the App for the current access key (appid).
         /// </summary>
@@ -77,7 +79,7 @@ namespace Para.Client
         {
             return me();
         }
-        
+
         /// <summary>
         /// Returns the endpoint URL
         /// </summary>
@@ -209,11 +211,11 @@ namespace Para.Client
                     if (error != null && error.ContainsKey("code"))
                     {
                         string msg = error.ContainsKey("message") ? (string)error["message"] : "error";
-                        logger.WriteEntry(msg + " - " + error["code"]);
+                        logger.LogError(msg + " - " + error["code"]);
                     }
                     else
                     {
-                        logger.WriteEntry(res.StatusCode + " - " + res.StatusDescription);
+                        logger.LogDebug(res.StatusCode + " - " + res.StatusDescription);
                     }
                 }
             }
@@ -341,7 +343,7 @@ namespace Para.Client
                     refreshToken();
                 }
                 req.Headers.Add("Authorization", "Bearer " + tokenKey);
-            } 
+            }
             else if (doSign)
             {
                 try
@@ -352,7 +354,7 @@ namespace Para.Client
                     signer.Sign(req, p, null, accessKey, secretKey);
                 }
                 catch
-                {                
+                {
                     return null;
                 }
             }
@@ -502,7 +504,7 @@ namespace Para.Client
                 {
                     result = (Dictionary<string, object>) res;
                 }
-				else if (res is string) 
+				else if (res is string)
                 {
 					result = (Dictionary<string, object>) Deserialize((string)res);
 				}
@@ -586,7 +588,7 @@ namespace Para.Client
             }
             return (ParaObject) getEntity(invokeGet("_id/" + Uri.EscapeDataString(id), null), false);
         }
-        
+
         /// <summary>
         /// Updates an object permanently. Supports partial updates.
         /// </summary>
@@ -600,7 +602,7 @@ namespace Para.Client
             }
             return (ParaObject) getEntity(invokePatch(obj.getObjectURI(), obj), false);
         }
-        
+
         /// <summary>
         /// Deletes an object permanently.
         /// </summary>
@@ -613,7 +615,7 @@ namespace Para.Client
             }
             invokeDelete(obj.getObjectURI(), null);
         }
-        
+
         /// <summary>
         /// Saves multiple objects to the data store.
         /// </summary>
@@ -624,10 +626,10 @@ namespace Para.Client
             if (objects == null || objects.Count == 0 || objects[0] == null)
             {
                 return new List<ParaObject>(0);
-            }            
+            }
             return getItemsFromList(getEntity(invokePost("_batch", objects), true));
         }
-        
+
         /// <summary>
         /// Retrieves multiple objects from the data store.
         /// </summary>
@@ -643,7 +645,7 @@ namespace Para.Client
             ids["ids"] = keys;
             return getItemsFromList(getEntity(invokeGet("_batch", ids), true));
     	}
-        
+
         /// <summary>
         /// Updates multiple objects.
         /// </summary>
@@ -657,7 +659,7 @@ namespace Para.Client
             }
             return getItemsFromList(getEntity(invokePatch("_batch", objects), true));
     	}
-        
+
         /// <summary>
         /// Deletes multiple objects.
         /// </summary>
@@ -692,7 +694,7 @@ namespace Para.Client
         /////////////////////////////////////////////
         //				 SEARCH
         /////////////////////////////////////////////
-        
+
         /// <summary>
         /// Simple id search.
         /// </summary>
@@ -731,7 +733,7 @@ namespace Para.Client
         public List<ParaObject> findNearby(string type, string query, int radius, double lat, double lng, params Pager[] pager)
         {
             var paramz = new Dictionary<string, object>();
-        	paramz["latlng"] = lat.ToString(CultureInfo.CreateSpecificCulture("en-GB")) + "," + 
+        	paramz["latlng"] = lat.ToString(CultureInfo.CreateSpecificCulture("en-GB")) + "," +
                 lng.ToString(CultureInfo.CreateSpecificCulture("en-GB"));
         	paramz["radius"] = radius.ToString();
         	paramz["q"] = query;
@@ -858,7 +860,7 @@ namespace Para.Client
             paramz.Concat(pagerToParams(pager));
             return getItems(find("in", paramz), pager);
         }
-        
+
         /// <summary>
         /// Searches for objects that have properties matching some given values. A terms query.
         /// </summary>
@@ -893,7 +895,7 @@ namespace Para.Client
         	paramz.Concat(pagerToParams(pager));
             return getItems(find("terms", paramz), pager);
         }
-        
+
         /// <summary>
         /// Searches for objects that have a property with a value matching a wildcard query.
         /// </summary>
@@ -911,7 +913,7 @@ namespace Para.Client
             paramz.Concat(pagerToParams(pager));
             return getItems(find("wildcard", paramz), pager);
         }
-        
+
         /// <summary>
         /// Counts indexed objects.
         /// </summary>
@@ -925,7 +927,7 @@ namespace Para.Client
             getItems(find("count", paramz), pager);
             return pager.count;
         }
-        
+
         /// <summary>
         /// Counts indexed objects matching a set of terms/values.
         /// </summary>
@@ -985,7 +987,7 @@ namespace Para.Client
         /////////////////////////////////////////////
         //				 LINKS
         /////////////////////////////////////////////
-        
+
         /// <summary>
         /// Count the total number of links between this object and another type of object.
         /// </summary>
@@ -1005,7 +1007,7 @@ namespace Para.Client
             getItems(getEntity(invokeGet(url, paramz), true), pager);
         	return pager.count;
         }
-        
+
         /// <summary>
         /// Returns all objects linked to the given one. Only applicable to many-to-many relationships.
         /// </summary>
@@ -1029,10 +1031,10 @@ namespace Para.Client
         /// <param name="obj">the object to execute this method on</param>
         /// <param name="type2">type of linked objects to search for</param>
         /// <param name="field">the name of the field to target (within a nested field "nstd")</param>
-        /// <param name="query">a query string</param> 
+        /// <param name="query">a query string</param>
         /// <param name="pager">a Pager</param>
         /// <returns>a list of linked objects</returns>
-        public List<ParaObject> findLinkedObjects(ParaObject obj, string type2, string field, string query, 
+        public List<ParaObject> findLinkedObjects(ParaObject obj, string type2, string field, string query,
             params Pager[] pager)
         {
             if (obj == null || obj.id == null || type2 == null)
@@ -1063,7 +1065,7 @@ namespace Para.Client
             string url = obj.getObjectURI() + "/links/" + Uri.EscapeDataString(type2) + "/" + Uri.EscapeDataString(id2);
             return bool.Parse((string) getEntity(invokeGet(url, null), true));
     	}
-        
+
         /// <summary>
         /// Checks if a given object is linked to this one.
         /// </summary>
@@ -1078,7 +1080,7 @@ namespace Para.Client
             }
             return isLinked(obj, toObj.type, toObj.id);
         }
-        
+
         /// <summary>
         /// Links an object to this one in a many-to-many relationship.
         /// Only a link is created. Objects are left untouched.
@@ -1096,7 +1098,7 @@ namespace Para.Client
             string url = obj.getObjectURI() + "/links/" + Uri.EscapeDataString(id2);
             return (string) getEntity(invokePost(url, null), true);
     	}
-        
+
         /// <summary>
         /// Unlinks an object from this one.
         /// Only a link is deleted. Objects are left untouched.
@@ -1113,7 +1115,7 @@ namespace Para.Client
             string url = obj.getObjectURI() + "/links/" + Uri.EscapeDataString(type2) + "/" + Uri.EscapeDataString(id2);
             invokeDelete(url, null);
         }
-        
+
         /// <summary>
         /// Unlinks all objects that are linked to this one.
         /// Only Linker objects are deleted, other objects are left untouched.
@@ -1128,7 +1130,7 @@ namespace Para.Client
             string url = obj.getObjectURI() + "/links";
             invokeDelete(url, null);
         }
-        
+
         /// <summary>
         /// Count the total number of child objects for this object.
         /// </summary>
@@ -1169,7 +1171,7 @@ namespace Para.Client
             string url = obj.getObjectURI() + "/links/" + Uri.EscapeDataString(type2);
             return getItems(getEntity(invokeGet(url, paramz), true), pager);
         }
-        
+
         /// <summary>
         /// Returns all child objects linked to this object.
         /// </summary>
@@ -1201,7 +1203,7 @@ namespace Para.Client
         /// </summary>
         /// <param name="obj">the object to execute this method on</param>
         /// <param name="type2">the type of children to look for</param>
-        /// <param name="query">a query string</param> 
+        /// <param name="query">a query string</param>
         /// <param name="pager">a Pager</param>
         /// <returns>a list of ParaObject in a one-to-many relationship with this object</returns>
         public List<ParaObject> findChildren(ParaObject obj, string type2, string query, params Pager[] pager)
@@ -1217,7 +1219,7 @@ namespace Para.Client
             string url = obj.getObjectURI() + "/links/" + Uri.EscapeDataString(type2);
             return getItems(getEntity(invokeGet(url, paramz), true), pager);
         }
-        
+
         /// <summary>
         /// Deletes all child objects permanently.
         /// </summary>
@@ -1238,7 +1240,7 @@ namespace Para.Client
         ///////////////////////////////////////////////
         ////				 UTILS
         ///////////////////////////////////////////////
-        
+
         /// <summary>
         /// Generates a new unique id.
         /// </summary>
@@ -1248,7 +1250,7 @@ namespace Para.Client
             var res = getEntity(invokeGet("utils/newid", null), true);
 			return (string) res ?? "";
         }
-        
+
         /// <summary>
         /// Returns the current timestamp.
         /// </summary>
@@ -1260,7 +1262,7 @@ namespace Para.Client
         	if (res != null) long.TryParse((string) res, out timestamp);
             return timestamp;
         }
-        
+
         /// <summary>
         /// Formats a date in a specific format.
         /// </summary>
@@ -1274,7 +1276,7 @@ namespace Para.Client
 			paramz["locale"] = string.IsNullOrEmpty(loc) ? null : loc;
             return (string) getEntity(invokeGet("utils/formatdate", paramz), true);
     	}
-        
+
         /// <summary>
         /// Converts spaces to dashes.
         /// </summary>
@@ -1288,7 +1290,7 @@ namespace Para.Client
             paramz["replacement"] = replaceWith;
             return (string) getEntity(invokeGet("utils/nospaces", paramz), true);
         }
-        
+
         /// <summary>
         /// Strips all symbols, punctuation, whitespace and control chars from a string.
         /// </summary>
@@ -1300,7 +1302,7 @@ namespace Para.Client
             paramz["string"] = str;
             return (string) getEntity(invokeGet("utils/nosymbols", paramz), true);
 	    }
-        
+
         /// <summary>
         /// Converts Markdown to HTML
         /// </summary>
@@ -1312,7 +1314,7 @@ namespace Para.Client
             paramz["md"] = markdownstring;
             return (string) getEntity(invokeGet("utils/md2html", paramz), true);
     	}
-        
+
         /// <summary>
         /// Returns the number of minutes, hours, months elapsed for a time delta (milliseconds).
         /// </summary>
@@ -1328,7 +1330,7 @@ namespace Para.Client
         /////////////////////////////////////////////
         //				 MISC
         /////////////////////////////////////////////
-                
+
         /// <summary>
         /// Generates a new set of access/secret keys.
         /// Old keys are discarded and invalid after this.
@@ -1336,14 +1338,14 @@ namespace Para.Client
         /// <returns>a Dictionary of new credentials</returns>
         public Dictionary<string, string> newKeys()
         {
-            var keys = JsonConvert.DeserializeObject<Dictionary<string, string>>((string) 
+            var keys = JsonConvert.DeserializeObject<Dictionary<string, string>>((string)
                 getEntity(invokePost("_newkeys", null), true));
             if (keys != null && keys.ContainsKey("secretKey")) {
                 secretKey = keys["secretKey"];
             }
             return keys;
         }
-        
+
         /// <summary>
         /// Returns all registered types for this App.
         /// </summary>
@@ -1352,7 +1354,7 @@ namespace Para.Client
         {
             return JsonConvert.DeserializeObject<Dictionary<string, string>>((string) getEntity(invokeGet("_types", null), true));
         }
-        
+
         /// <summary>
         /// Returns a User or an App that is currently authenticated.
         /// </summary>
@@ -1468,7 +1470,7 @@ namespace Para.Client
 		/// <returns>a Dictionary containing all validation constraints for this type.</returns>
 		public Dictionary<string, Dictionary<string, Dictionary<string, object>>> addValidationConstraint(string type, string field, Constraint c)
 		{
-			return JsonConvert.DeserializeObject<Dictionary<string, Dictionary<string, Dictionary<string, object>>>> 
+			return JsonConvert.DeserializeObject<Dictionary<string, Dictionary<string, Dictionary<string, object>>>>
 				((string) getEntity(invokePut("_constraints/" + Uri.EscapeDataString(type) + "/" + field + "/" + c.name, c.payload), true));
 		}
 
@@ -1488,7 +1490,7 @@ namespace Para.Client
         /////////////////////////////////////////////
         //       Resource Permissions
         /////////////////////////////////////////////
-    
+
         /// <summary>
         /// Returns the permissions for all subjects and resources for current app.
         /// </summary>
@@ -1650,7 +1652,7 @@ namespace Para.Client
         /////////////////////////////////////////////
         //              Access Tokens
         /////////////////////////////////////////////
-    
+
         /// <summary>
         /// Takes an identity provider access token and fetches the user data from that provider.
         /// A new {@link  User} object is created if that user doesn't exist.
@@ -1755,7 +1757,7 @@ namespace Para.Client
 
     public class ParaRequest : AmazonWebServiceRequest
     {
-        
+
     }
 
     public class ParaConfig : ClientConfig
@@ -1783,5 +1785,5 @@ namespace Para.Client
                 return "ParaClient for .NET";
             }
         }
-    }    
+    }
 }
