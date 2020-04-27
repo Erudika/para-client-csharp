@@ -16,8 +16,16 @@ This is the .NET client for Para.
 
 ### Quick start
 
-1. Use the [NuGet](https://www.nuget.org/) package manager and include `para_client_csharp` as a 
-dependency to your project.
+1. Use the [NuGet](https://www.nuget.org/) package manager and add `para_client_csharp` as a 
+dependency to your project:
+
+```
+Install-Package para_client_csharp -Version x.y.z
+```
+OR
+```
+dotnet add package para_client_csharp --version x.y.z
+```
 
 2. Initialize the client with your access and secret API keys.
 ```csharp
