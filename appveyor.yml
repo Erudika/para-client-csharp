@@ -17,3 +17,5 @@ build:
 test: off
 before_build:
   - nuget restore para-client-csharp.sln
+after_build:
+  - appveyor PushArtifact para_client_csharp.%APPVEYOR_BUILD_VERSION%.nupkg
