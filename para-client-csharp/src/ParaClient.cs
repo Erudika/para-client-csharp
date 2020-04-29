@@ -50,7 +50,6 @@ namespace Para.Client
         string secretKey;
 
         readonly AWS4Signer signer = new AWS4Signer();
-        readonly RestClient client = new RestClient();
         readonly ILogger logger;
 
         public ParaClient(string accessKey, string secretKey)
@@ -86,7 +85,7 @@ namespace Para.Client
         /// <returns>the endpoint</returns>
         public string getEndpoint()
         {
-            if (string.IsNullOrEmpty(endpoint))
+            if (string.IsNullOrWhiteSpace(endpoint))
             {
                 return DEFAULT_ENDPOINT;
             }
@@ -111,7 +110,7 @@ namespace Para.Client
         /// <returns>the request path without parameters</returns>
         public string getApiPath()
         {
-            if (string.IsNullOrEmpty(path))
+            if (string.IsNullOrWhiteSpace(path))
             {
                 return DEFAULT_PATH;
             }
@@ -133,7 +132,7 @@ namespace Para.Client
         {
             Dictionary<string, object> res = JsonConvert.DeserializeObject<Dictionary<string, object>>(
                 (string)getEntity(invokeGet("", null), true));
-            if (res == null || string.IsNullOrEmpty((String) res["version"])) {
+            if (res == null || string.IsNullOrWhiteSpace((String) res["version"])) {
                 return "unknown";
             } else {
                 return (String) res["version"];
@@ -152,7 +151,7 @@ namespace Para.Client
         /// <param name="token">a valid token.</param>
         public void setAccessToken(string token)
         {
-            if (!string.IsNullOrEmpty(token)) {
+            if (!string.IsNullOrWhiteSpace(token)) {
                 try {
                     var parts = token.Split('.');
                     var payload = System.Text.Encoding.UTF8.GetString(Convert.FromBase64String(parts[1]));
@@ -232,7 +231,7 @@ namespace Para.Client
             if (resourcePath != null && resourcePath.StartsWith(JWT_PATH)) {
                 return resourcePath;
             }
-            if (string.IsNullOrEmpty(resourcePath))
+            if (string.IsNullOrWhiteSpace(resourcePath))
             {
                 resourcePath = "";
             }
@@ -248,12 +247,12 @@ namespace Para.Client
             return (long) (DateTime.UtcNow - Jan1st1970).TotalMilliseconds;
         }
 
-        static object Deserialize(string json)
+        private object Deserialize(string json)
         {
             return (json != null) ? ToObject(JToken.Parse(json)) : null;
         }
 
-        protected static object ToObject(JToken token)
+        protected object ToObject(JToken token)
         {
             switch (token.Type)
             {
@@ -271,12 +270,12 @@ namespace Para.Client
         protected IRestResponse invokeSignedRequest(Method httpMethod, string endpointURL, string reqPath,
 			Dictionary<string, string> headers, Dictionary<string, object> paramz, object jsonEntity)
         {
-            if (string.IsNullOrEmpty(accessKey))
+            if (string.IsNullOrWhiteSpace(accessKey))
             {
                 throw new Exception("Blank access key: " + httpMethod + " " + reqPath);
             }
             bool doSign = true;
-            if (string.IsNullOrEmpty(secretKey) && string.IsNullOrEmpty(tokenKey)) {
+            if (string.IsNullOrWhiteSpace(secretKey) && string.IsNullOrWhiteSpace(tokenKey)) {
                 if (headers == null) {
                     headers = new Dictionary<string, string>();
                 }
@@ -290,9 +289,16 @@ namespace Para.Client
             req.HttpMethod = httpMethod.ToString();
             req.UseQueryString = true;
 
-            var restReq = new RestRequest(new Uri(endpointURL));
-            restReq.Method = httpMethod;
-            client.BaseUrl = new Uri(endpoint + reqPath);
+            RestClient client = new RestClient(req.Endpoint);
+            client.UserAgent = "Para client for .NET";
+
+            string resource = reqPath;
+            if (reqPath.StartsWith("/"))
+            {
+                resource = reqPath.Substring(1);
+            }
+
+            var restReq = new RestRequest(resource, httpMethod);
 
             if (paramz != null)
             {
@@ -361,10 +367,7 @@ namespace Para.Client
 
             if (req.Headers != null)
             {
-                foreach (var header in req.Headers)
-                {
-                    restReq.AddHeader(header.Key, header.Value);
-                }
+                restReq.AddHeaders(req.Headers);
             }
             return client.Execute(restReq);
         }
@@ -549,9 +552,9 @@ namespace Para.Client
             {
                 return null;
             }
-            if (string.IsNullOrEmpty(obj.id) || string.IsNullOrEmpty(obj.type))
+            if (string.IsNullOrWhiteSpace(obj.id) || string.IsNullOrWhiteSpace(obj.type))
             {
-                return (ParaObject) getEntity(invokePost(Uri.EscapeDataString(obj.type), obj), false);
+                return (ParaObject) getEntity(invokePost(obj.type, obj), false);
             }
             else
             {
@@ -567,12 +570,11 @@ namespace Para.Client
         /// <returns>the retrieved object or null if not found</returns>
         public ParaObject read(string type, string id)
         {
-            if (string.IsNullOrEmpty(type) || string.IsNullOrEmpty(id))
+            if (string.IsNullOrWhiteSpace(type) || string.IsNullOrWhiteSpace(id))
             {
                 return null;
             }
-            return (ParaObject) getEntity(invokeGet(Uri.EscapeDataString(type) + "/" +
-                Uri.EscapeDataString(id), null), false);
+            return (ParaObject) getEntity(invokeGet(type + "/" + id, null), false);
         }
 
         /// <summary>
@@ -582,11 +584,11 @@ namespace Para.Client
         /// <returns>the retrieved object or null if not found</returns>
         public ParaObject read(string id)
         {
-            if (string.IsNullOrEmpty(id))
+            if (string.IsNullOrWhiteSpace(id))
             {
                 return null;
             }
-            return (ParaObject) getEntity(invokeGet("_id/" + Uri.EscapeDataString(id), null), false);
+            return (ParaObject) getEntity(invokeGet("_id/" + id, null), false);
         }
 
         /// <summary>
@@ -684,11 +686,11 @@ namespace Para.Client
         /// <returns>a list of objects</returns>
         public List<ParaObject> list(string type, params Pager[] pager)
         {
-            if (string.IsNullOrEmpty(type))
+            if (string.IsNullOrWhiteSpace(type))
             {
                 return new List<ParaObject>(0);
             }
-            return getItems(getEntity(invokeGet(Uri.EscapeDataString(type), pagerToParams(pager)), true), pager);
+            return getItems(getEntity(invokeGet(type, pagerToParams(pager)), true), pager);
     	}
 
         /////////////////////////////////////////////
@@ -966,8 +968,8 @@ namespace Para.Client
         {
             var map = new Dictionary<string, object>();
             if (paramz != null && paramz.Count > 0) {
-                string qType = string.IsNullOrEmpty(queryType) ? "/default" : "/" + queryType;
-                if (!paramz.ContainsKey("type") || string.IsNullOrEmpty((string) paramz["type"]))
+                string qType = string.IsNullOrWhiteSpace(queryType) ? "/default" : "/" + queryType;
+                if (!paramz.ContainsKey("type") || string.IsNullOrWhiteSpace((string) paramz["type"]))
                 {
                     return getEntity(invokeGet("search" + qType, paramz), true);
                 }
@@ -1003,7 +1005,7 @@ namespace Para.Client
             var paramz = new Dictionary<string, object>();
             paramz["count"] = "true";
             var pager = new Pager();
-            string url = obj.getObjectURI() + "/links/" + Uri.EscapeDataString(type2);
+            string url = obj.getObjectURI() + "/links/" + type2;
             getItems(getEntity(invokeGet(url, paramz), true), pager);
         	return pager.count;
         }
@@ -1021,7 +1023,7 @@ namespace Para.Client
             {
                 return new List<ParaObject>(0);
             }
-            string url = obj.getObjectURI() + "/links/" + Uri.EscapeDataString(type2);
+            string url = obj.getObjectURI() + "/links/" + type2;
             return getItems(getEntity(invokeGet(url, pagerToParams(pager)), true), pager);
     	}
 
@@ -1043,9 +1045,9 @@ namespace Para.Client
             }
             var paramz = new Dictionary<string, object>();
             paramz["field"] = field;
-            paramz["q"] = string.IsNullOrEmpty(query) ? "*" : query;
+            paramz["q"] = string.IsNullOrWhiteSpace(query) ? "*" : query;
             paramz.Concat(pagerToParams(pager));
-            string url = obj.getObjectURI() + "/links/" + Uri.EscapeDataString(type2);
+            string url = obj.getObjectURI() + "/links/" + type2;
             return getItems(getEntity(invokeGet(url, paramz), true), pager);
         }
 
@@ -1062,7 +1064,7 @@ namespace Para.Client
             {
                 return false;
             }
-            string url = obj.getObjectURI() + "/links/" + Uri.EscapeDataString(type2) + "/" + Uri.EscapeDataString(id2);
+            string url = obj.getObjectURI() + "/links/" + type2 + "/" + id2;
             return bool.Parse((string) getEntity(invokeGet(url, null), true));
     	}
 
@@ -1095,7 +1097,7 @@ namespace Para.Client
             {
                 return null;
             }
-            string url = obj.getObjectURI() + "/links/" + Uri.EscapeDataString(id2);
+            string url = obj.getObjectURI() + "/links/" + id2;
             return (string) getEntity(invokePost(url, null), true);
     	}
 
@@ -1112,7 +1114,7 @@ namespace Para.Client
             {
                 return;
             }
-            string url = obj.getObjectURI() + "/links/" + Uri.EscapeDataString(type2) + "/" + Uri.EscapeDataString(id2);
+            string url = obj.getObjectURI() + "/links/" + type2 + "/" + id2;
             invokeDelete(url, null);
         }
 
@@ -1147,7 +1149,7 @@ namespace Para.Client
             paramz["count"] = "true";
             paramz["childrenonly"] = "true";
             var pager = new Pager();
-            string url = obj.getObjectURI() + "/links/" + Uri.EscapeDataString(type2);
+            string url = obj.getObjectURI() + "/links/" + type2;
             getItems(getEntity(invokeGet(url, paramz), true), pager);
         	return pager.count;
         }
@@ -1168,7 +1170,7 @@ namespace Para.Client
             var paramz = new Dictionary<string, object>();
             paramz["childrenonly"] = "true";
             paramz.Concat(pagerToParams(pager));
-            string url = obj.getObjectURI() + "/links/" + Uri.EscapeDataString(type2);
+            string url = obj.getObjectURI() + "/links/" + type2;
             return getItems(getEntity(invokeGet(url, paramz), true), pager);
         }
 
@@ -1193,7 +1195,7 @@ namespace Para.Client
             paramz["field"] = field;
             paramz["term"] = term;
             paramz.Concat(pagerToParams(pager));
-            string url = obj.getObjectURI() + "/links/" + Uri.EscapeDataString(type2);
+            string url = obj.getObjectURI() + "/links/" + type2;
             return getItems(getEntity(invokeGet(url, paramz), true), pager);
         }
 
@@ -1214,9 +1216,9 @@ namespace Para.Client
             }
             var paramz = new Dictionary<string, object>();
             paramz["childrenonly"] = "true";
-            paramz["q"] = string.IsNullOrEmpty(query) ? "*" : query;
+            paramz["q"] = string.IsNullOrWhiteSpace(query) ? "*" : query;
             paramz.Concat(pagerToParams(pager));
-            string url = obj.getObjectURI() + "/links/" + Uri.EscapeDataString(type2);
+            string url = obj.getObjectURI() + "/links/" + type2;
             return getItems(getEntity(invokeGet(url, paramz), true), pager);
         }
 
@@ -1233,7 +1235,7 @@ namespace Para.Client
             }
             var paramz = new Dictionary<string, object>();
             paramz["childrenonly"] = "true";
-            string url = obj.getObjectURI() + "/links/" + Uri.EscapeDataString(type2);
+            string url = obj.getObjectURI() + "/links/" + type2;
             invokeDelete(url, paramz);
         }
 
@@ -1273,7 +1275,7 @@ namespace Para.Client
         {
             var paramz = new Dictionary<string, object>();
             paramz["format"] = format;
-			paramz["locale"] = string.IsNullOrEmpty(loc) ? null : loc;
+			paramz["locale"] = string.IsNullOrWhiteSpace(loc) ? null : loc;
             return (string) getEntity(invokeGet("utils/formatdate", paramz), true);
     	}
 
@@ -1371,7 +1373,7 @@ namespace Para.Client
         /// <returns>User or App object or null</returns>
         public ParaObject me(string accessToken)
         {
-            if (!string.IsNullOrEmpty(accessToken))
+            if (!string.IsNullOrWhiteSpace(accessToken))
             {
                 var headers = new Dictionary<string, string>();
                 headers["Authorization"] = accessToken.StartsWith("Bearer") ? accessToken : "Bearer " + accessToken;
@@ -1389,7 +1391,7 @@ namespace Para.Client
         /// <param name="voterid">the userid of the voter</param>
         public bool voteUp(ParaObject obj, string voterid)
         {
-            if (obj == null || string.IsNullOrEmpty(voterid))
+            if (obj == null || string.IsNullOrWhiteSpace(voterid))
             {
                 return false;
             }
@@ -1406,7 +1408,7 @@ namespace Para.Client
         /// <param name="voterid">the userid of the voter</param>
         public bool voteDown(ParaObject obj, string voterid)
         {
-            if (obj == null || string.IsNullOrEmpty(voterid))
+            if (obj == null || string.IsNullOrWhiteSpace(voterid))
             {
                 return false;
             }
@@ -1458,7 +1460,7 @@ namespace Para.Client
 		public Dictionary<string, Dictionary<string, Dictionary<string, object>>> validationConstraints(string type)
 		{
 			return JsonConvert.DeserializeObject<Dictionary<string, Dictionary<string, Dictionary<string, object>>>>
-				((string) getEntity(invokeGet("_constraints/" + Uri.EscapeDataString(type), null), true));
+				((string) getEntity(invokeGet("_constraints/" + type, null), true));
 		}
 
 		/// <summary>
@@ -1471,7 +1473,7 @@ namespace Para.Client
 		public Dictionary<string, Dictionary<string, Dictionary<string, object>>> addValidationConstraint(string type, string field, Constraint c)
 		{
 			return JsonConvert.DeserializeObject<Dictionary<string, Dictionary<string, Dictionary<string, object>>>>
-				((string) getEntity(invokePut("_constraints/" + Uri.EscapeDataString(type) + "/" + field + "/" + c.name, c.payload), true));
+				((string) getEntity(invokePut("_constraints/" + type + "/" + field + "/" + c.name, c.payload), true));
 		}
 
 		/// <summary>
@@ -1484,7 +1486,7 @@ namespace Para.Client
 		public Dictionary<string, object> removeValidationConstraint(string type, string field, string constraintName)
 		{
 			return JsonConvert.DeserializeObject<Dictionary<string, object>>
-				((string) getEntity(invokeDelete("_constraints/" + Uri.EscapeDataString(type) + "/" + field + "/" + constraintName, null), true));
+				((string) getEntity(invokeDelete("_constraints/" + type + "/" + field + "/" + constraintName, null), true));
 		}
 
         /////////////////////////////////////////////
@@ -1497,7 +1499,7 @@ namespace Para.Client
         /// <returns>a map of subject ids to resource names to a list of allowed methods</returns>
         public Dictionary<string, Dictionary<string, List<string>>> resourcePermissions() {
                 return JsonConvert.DeserializeObject<Dictionary<string, Dictionary<string, List<string>>>>
-                    ((string) getEntity(invokeGet("_permissions", null), true));
+                    ((string) getEntity(invokeGet("_permissions", null), true) ?? "{}");
         }
 
         /// <summary>
@@ -1507,7 +1509,7 @@ namespace Para.Client
         /// <param name="subjectid">the subject id (user id)</param>
         public Dictionary<string, Dictionary<string, List<string>>> resourcePermissions(string subjectid) {
             return JsonConvert.DeserializeObject<Dictionary<string, Dictionary<string, List<string>>>>
-                ((string) getEntity(invokeGet("_permissions/" + Uri.EscapeDataString(subjectid), null), true));
+                ((string) getEntity(invokeGet("_permissions/" + subjectid, null), true) ?? "{}");
         }
 
         /// <summary>
@@ -1532,7 +1534,7 @@ namespace Para.Client
         /// <param name="allowGuestAccess">if true - all unauthenticated requests will go through, 'false' by default.</param>
         public Dictionary<string, Dictionary<string, List<string>>> grantResourcePermission(string subjectid, string resourcePath,
             string[] permission, bool allowGuestAccess) {
-            if (string.IsNullOrEmpty(subjectid) || string.IsNullOrEmpty(resourcePath) || permission == null) {
+            if (string.IsNullOrWhiteSpace(subjectid) || string.IsNullOrWhiteSpace(resourcePath) || permission == null) {
                 return new Dictionary<string, Dictionary<string, List<string>>>();
             }
             if (allowGuestAccess && "*".Equals(subjectid)) {
@@ -1541,9 +1543,9 @@ namespace Para.Client
                 arr[permission.Length] = "?";
                 permission = arr;
             }
-            resourcePath = Uri.EscapeDataString(resourcePath);
-            return JsonConvert.DeserializeObject<Dictionary<string, Dictionary<string, List<string>>>>
-                ((string) getEntity(invokePut("_permissions/" + Uri.EscapeDataString(subjectid) + "/" + resourcePath, permission), true));
+            resourcePath = resourcePath.Replace("/", "%2F");
+            var entity = (string) getEntity(invokePut("_permissions/" + subjectid + "/" + resourcePath, permission), true);
+            return entity == null ? null : JsonConvert.DeserializeObject<Dictionary<string, Dictionary<string, List<string>>>>(entity);
         }
 
         /// <summary>
@@ -1553,12 +1555,12 @@ namespace Para.Client
         /// <param name="subjectid">subject id (user id)</param>
         /// <param name="resourcePath">resource path or object type</param>
         public Dictionary<string, Dictionary<string, List<string>>> revokeResourcePermission(string subjectid, string resourcePath) {
-            if (string.IsNullOrEmpty(subjectid) || string.IsNullOrEmpty(resourcePath)) {
+            if (string.IsNullOrWhiteSpace(subjectid) || string.IsNullOrWhiteSpace(resourcePath)) {
                 return new Dictionary<string, Dictionary<string, List<string>>>();
             }
-            resourcePath = Uri.EscapeDataString(resourcePath);
-            return JsonConvert.DeserializeObject<Dictionary<string, Dictionary<string, List<string>>>>
-                ((string) getEntity(invokeDelete("_permissions/" + Uri.EscapeDataString(subjectid) + "/" + resourcePath, null), true));
+            resourcePath = resourcePath.Replace("/", "%2F");
+            var entity = (string) getEntity(invokeDelete("_permissions/" + subjectid + "/" + resourcePath, null), true);
+            return entity == null ? null : JsonConvert.DeserializeObject<Dictionary<string, Dictionary<string, List<string>>>>(entity);
         }
 
         /// <summary>
@@ -1567,11 +1569,11 @@ namespace Para.Client
         /// <returns>a map of the permissions for this subject id</returns>
         /// <param name="subjectid">subject id (user id)</param>
         public Dictionary<string, Dictionary<string, List<string>>> revokeAllResourcePermissions(string subjectid) {
-            if (string.IsNullOrEmpty(subjectid)) {
+            if (string.IsNullOrWhiteSpace(subjectid)) {
                 return new Dictionary<string, Dictionary<string, List<string>>>();
             }
-            return JsonConvert.DeserializeObject<Dictionary<string, Dictionary<string, List<string>>>>
-                ((string) getEntity(invokeDelete("_permissions/" + Uri.EscapeDataString(subjectid), null), true));
+            var entity = (string) getEntity(invokeDelete("_permissions/" + subjectid, null), true);
+            return entity == null ? null : JsonConvert.DeserializeObject<Dictionary<string, Dictionary<string, List<string>>>>(entity);
         }
 
         /// <summary>
@@ -1582,12 +1584,12 @@ namespace Para.Client
         /// <param name="resourcePath">resource path or object type</param>
         /// <param name="httpMethod">HTTP method name</param>
         public bool isAllowedTo(string subjectid, string resourcePath, string httpMethod) {
-            if (string.IsNullOrEmpty(subjectid) || string.IsNullOrEmpty(resourcePath) || string.IsNullOrEmpty(httpMethod)) {
+            if (string.IsNullOrWhiteSpace(subjectid) || string.IsNullOrWhiteSpace(resourcePath) || string.IsNullOrWhiteSpace(httpMethod)) {
                 return false;
             }
-            resourcePath = Uri.EscapeDataString(resourcePath);
-            string url = "_permissions/" + Uri.EscapeDataString(subjectid) + "/" + resourcePath + "/" + httpMethod;
-            return bool.Parse((string) getEntity(invokeGet(url, null), true));
+            resourcePath = resourcePath.Replace("/", "%2F");
+            string url = "_permissions/" + subjectid + "/" + resourcePath + "/" + httpMethod;
+            return bool.Parse((string) getEntity(invokeGet(url, null), true) ?? "false");
         }
 
         /////////////////////////////////////////////
@@ -1609,7 +1611,7 @@ namespace Para.Client
         /// <returns>a map with a single entry {value: value}.</returns>
         /// <param name="key">a key</param>
         public Dictionary<string, object> appSettings(string key) {
-            if (string.IsNullOrEmpty (key)) {
+            if (string.IsNullOrWhiteSpace (key)) {
                 return appSettings();
             }
             return JsonConvert.DeserializeObject<Dictionary<string, object>>
@@ -1622,7 +1624,7 @@ namespace Para.Client
         /// <param name="key">a key</param>
         /// <param name="value">a value</param>
         public void addAppSetting(string key, object value) {
-            if (!string.IsNullOrEmpty(key) && value != null) {
+            if (!string.IsNullOrWhiteSpace(key) && value != null) {
                 invokePut("_settings/" + key, new Dictionary<string, object> { { "value", value } });
             }
         }
@@ -1644,7 +1646,7 @@ namespace Para.Client
         /// </summary>
         /// <param name="key">a key</param>
         public void removeAppSetting(string key) {
-            if (!string.IsNullOrEmpty(key)) {
+            if (!string.IsNullOrWhiteSpace(key)) {
                 invokeDelete("_settings/" + key, null);
             }
         }
@@ -1666,7 +1668,7 @@ namespace Para.Client
         /// <param name="provider">identity provider, e.g. 'facebook', 'google'...</param>
         /// <param name="providerToken">access token from a provider like Facebook, Google, Twitter</param>
         public ParaObject signIn(string provider, string providerToken, bool rememberJWT) {
-            if (!string.IsNullOrEmpty(provider) && !string.IsNullOrEmpty(providerToken)) {
+            if (!string.IsNullOrWhiteSpace(provider) && !string.IsNullOrWhiteSpace(providerToken)) {
                 var credentials = new Dictionary<string, string>();
                 credentials["appid"] = accessKey;
                 credentials["provider"] = provider;

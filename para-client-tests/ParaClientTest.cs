@@ -29,7 +29,7 @@ namespace Para.Client.Tests
         [OneTimeSetUp]
         public static void setUpClass()
         {
-            pc = new ParaClient("app:para", "xC2/S0vrq41lYlFliGmKfmuuQBe1ixf2DXbgzbCq0q6TIu6W66uH3g==");
+            pc = new ParaClient("app:para", "xeBCvtlH4Y6vD4tWB6NWA4KL7TFEBvcmiWnc9LjO+eCqYrGn4fOykw==");
             pc.setEndpoint("http://localhost:8080");
             pc2 = new ParaClient("app:para", null);
             pc2.setEndpoint("http://localhost:8080");
@@ -355,7 +355,7 @@ namespace Para.Client.Tests
             string id1 = pc.newId();
             string id2 = pc.newId();
             Assert.IsNotNull(id1);
-            Assert.IsFalse(string.IsNullOrEmpty(id1));
+            Assert.IsFalse(string.IsNullOrWhiteSpace(id1));
             Assert.AreNotEqual(id1, id2);
 
             long ts = pc.getTimestamp();
@@ -400,7 +400,7 @@ namespace Para.Client.Tests
             Assert.IsTrue(constraints.ContainsKey("app"));
             Assert.IsTrue(constraints.ContainsKey("user"));
 
-            Dictionary<string, Dictionary<string, Dictionary<string, object>>> constraint = 
+            Dictionary<string, Dictionary<string, Dictionary<string, object>>> constraint =
                 pc.validationConstraints("app");
             Assert.IsFalse(constraint.Count == 0);
             Assert.IsTrue(constraint.ContainsKey("app"));
@@ -456,6 +456,7 @@ namespace Para.Client.Tests
             Assert.IsTrue(pc.isAllowedTo(u1.id, dogsType, "GET"));
             Assert.IsFalse(pc.isAllowedTo(u1.id, dogsType, "POST"));
             // anonymous permissions
+            pc.revokeAllResourcePermissions("*");
             Assert.IsFalse(pc.isAllowedTo("*", "utils/timestamp", "GET"));
             Assert.IsNotNull(pc.grantResourcePermission("*", "utils/timestamp", new [] {"GET"}, true));
             Assert.IsTrue(pc2.getTimestamp() > 0);
@@ -513,6 +514,7 @@ namespace Para.Client.Tests
         [Test]
         public void testAppSettings()
         {
+            pc.setAppSettings(new Dictionary<string, object>(0));
             Dictionary<string, object> settings = pc.appSettings();
             Assert.NotNull(settings);
             Assert.IsTrue(settings.Count == 0);

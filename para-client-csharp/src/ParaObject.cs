@@ -37,7 +37,7 @@ namespace Para.Client
         /// </summary>
         public long timestamp { get; set; }
         /// <summary>
-        /// The type of the object. 
+        /// The type of the object.
         /// </summary>
         public string type { get; set; }
         /// <summary>
@@ -68,11 +68,11 @@ namespace Para.Client
         /// <summary>
         /// Returns the total sum of all votes for this object.
         /// </summary>
-        public int votes { get; set; }
+        public long votes { get; set; }
         /// <summary>
         /// Returns the version of this object.
         /// </summary>
-        public int version { get; set; }
+        public long version { get; set; }
         /// <summary>
         /// Gets or sets a value indicating whether this object is stored in DB.
         /// </summary>
@@ -91,7 +91,7 @@ namespace Para.Client
 
         [JsonExtensionData]
         public readonly Dictionary<string, object> properties = new Dictionary<string, object>();
-        
+
         public ParaObject() : this(null, null)
         {
         }
@@ -104,7 +104,7 @@ namespace Para.Client
         {
             this.id = id;
             this.type = type;
-            if (string.IsNullOrEmpty(type)) this.type = "sysprop";
+            if (string.IsNullOrWhiteSpace(type)) this.type = "sysprop";
             this.votes = 0;
             this.version = 0;
             this.name = "ParaObject";
@@ -119,8 +119,8 @@ namespace Para.Client
         /// <returns>the URI string</returns>
         public string getObjectURI()
         {
-		    string def = "/" + Uri.EscapeDataString(this.type);
-            return (this.id != null) ? def + "/" + Uri.EscapeDataString(this.id) : def;
+		    string def = "/" + this.type;
+            return (this.id != null) ? def + "/" + this.id : def;
         }
 
         public object this[string name]
@@ -172,4 +172,3 @@ namespace Para.Client
         }
     }
 }
-    
