@@ -4,7 +4,7 @@ echo "Last tag was: $lastver"
 echo "---"
 read -e -p "Tag: " ver
 
-sed -i -e "s/>$lastver</>$ver</g" para-client-csharp/para-client-csharp.csproj
+sed -i -e "s/>${lastver:1}</>$ver</g" para-client-csharp/para-client-csharp.csproj
 
 git add -A && git commit -m "Release v$ver."
 git tag "v$ver"
