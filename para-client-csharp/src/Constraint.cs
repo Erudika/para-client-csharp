@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2019 Erudika. https://erudika.com
+ * Copyright 2013-2021 Erudika. https://erudika.com
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -75,7 +75,7 @@ namespace Para.Client
         }
 
         /// <summary>
-        /// The 'size' constraint - field must be a String, Object or Array 
+        /// The 'size' constraint - field must be a String, Object or Array
         /// with a given minimum and maximum length.
         /// </summary>
         /// <param name="min">the minimum length</param>
@@ -172,6 +172,6 @@ namespace Para.Client
         public static Constraint url()
         {
             return new Constraint("url", new Dictionary<string, object> { { "message", "messages.url" } });
-        }        
+        }
     }
 }
