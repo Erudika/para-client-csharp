@@ -1358,6 +1358,17 @@ namespace Para.Client
         }
 
         /// <summary>
+        /// Returns the number of objects for each existing type in this App.
+        /// </summary>
+        /// <returns>a map of singular object type to object count.</returns>
+        public Dictionary<string, int> typesCount()
+        {
+            var paramz = new Dictionary<string, object>();
+            paramz["count"] = "true";
+            return JsonConvert.DeserializeObject<Dictionary<string, int>>((string) getEntity(invokeGet("_types", paramz), true));
+        }
+
+        /// <summary>
         /// Returns a User or an App that is currently authenticated.
         /// </summary>
         /// <returns>User or App object or null</returns>
