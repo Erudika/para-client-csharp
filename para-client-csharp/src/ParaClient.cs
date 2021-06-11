@@ -451,6 +451,10 @@ namespace Para.Client
                     {
                         map["sort"] = p.sortby;
                     }
+                    if (p.select != null && p.select.Count > 0)
+                    {
+                        map["select"] = p.select;
+                    }
                 }
             }
             return map;

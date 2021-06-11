@@ -19,7 +19,7 @@ build:
 deploy:
 - provider: NuGet
   api_key:
-    secure: MXJfg0wgB+rI0MTloy2RsrHyjib8aE7HO9sJxHldahzo6mTm96IdEZOpkEsPI5fy
+    secure: G7rrgaubVWVI/GuNwMhdgHZXzedzACKHyJm04spqSeQ7klRhFhlYkWKurIabweKa
 test: off
 before_build:
   - nuget restore para-client-csharp.sln

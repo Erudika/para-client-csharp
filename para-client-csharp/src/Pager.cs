@@ -16,6 +16,8 @@
  * For issues and patches go to: https://github.com/erudika
  */
 
+using System.Collections.Generic;
+
 namespace Para.Client
 {
     /// <summary>
@@ -31,6 +33,7 @@ namespace Para.Client
         public int limit { get; set; }
         public string name { get; set; }
         public string lastKey { get; set; }
+        public List<string> select { get; set; }
 
         public Pager() : this(1, null, true, 30)
         {
@@ -51,6 +54,7 @@ namespace Para.Client
             this.sortby = sortby;
             this.desc = desc;
             this.limit = limit;
+            this.select = null;
         }
     }
 }
