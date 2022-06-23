@@ -9,7 +9,7 @@
       Para API Client for .NET
     </Description>
     <Copyright>Copyright 2022 Erudika</Copyright>
-    <Version>1.33.3</Version>
+    <Version>1.33.4</Version>
     <AssemblyVersion>2.0.0.0</AssemblyVersion>
     <FileVersion>2.0.0.0</FileVersion>
     <OutputPath>bin\$(Configuration)\</OutputPath>
@@ -32,7 +32,7 @@
     <ApplicationIcon>favicon.ico</ApplicationIcon>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="AWSSDK.Core" Version="3.3.106.11" />
+    <PackageReference Include="AWSSDK.Core" Version="3.7.12.2" />
     <PackageReference Include="Microsoft.Extensions.Logging" Version="3.1.3" />
     <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="3.1.3" />
     <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies" Version="1.0.0">
@@ -40,7 +40,7 @@
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
     <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
-    <PackageReference Include="RestSharp" Version="106.12.0" />
+    <PackageReference Include="RestSharp" Version="108.0.1" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="favicon.ico" />
