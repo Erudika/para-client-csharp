@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+﻿  <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <RootNamespace>Para</RootNamespace>
     <TargetFrameworks>netcoreapp3.1;net472</TargetFrameworks>
@@ -40,7 +40,7 @@
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
     <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
-    <PackageReference Include="RestSharp" Version="108.0.1" />
+    <PackageReference Include="RestSharp" Version="108.0.2-alpha.0.1" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="favicon.ico" />
