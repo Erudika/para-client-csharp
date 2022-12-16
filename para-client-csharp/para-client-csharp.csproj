@@ -1,7 +1,7 @@
 ﻿  <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <RootNamespace>Para</RootNamespace>
-    <TargetFrameworks>netcoreapp3.1;net472</TargetFrameworks>
+    <TargetFrameworks>netcoreapp3.1;net48</TargetFrameworks>
     <AssemblyTitle>para-client-csharp</AssemblyTitle>
     <Company>Erudika</Company>
     <Product>para_client_csharp</Product>
