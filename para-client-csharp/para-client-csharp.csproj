@@ -1,7 +1,7 @@
 ﻿  <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <RootNamespace>Para</RootNamespace>
-    <TargetFrameworks>netcoreapp3.1;net48</TargetFrameworks>
+    <TargetFrameworks>net8.0;netstandard2.0</TargetFrameworks>
     <AssemblyTitle>para-client-csharp</AssemblyTitle>
     <Company>Erudika</Company>
     <Product>para_client_csharp</Product>
@@ -12,13 +12,21 @@
     <Version>1.33.4</Version>
     <AssemblyVersion>2.0.0.0</AssemblyVersion>
     <FileVersion>2.0.0.0</FileVersion>
-    <OutputPath>bin\$(Configuration)\</OutputPath>
-    <LangVersion>Default</LangVersion>
+    <LangVersion>latest</LangVersion>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <Deterministic>true</Deterministic>
+    <ContinuousIntegrationBuild>true</ContinuousIntegrationBuild>
+    <TreatWarningsAsErrors Condition="'$(Configuration)' == 'Release'">true</TreatWarningsAsErrors>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <Authors>albogdano</Authors>
-    <PackageIconUrl>https://paraio.org/apple-touch-icon-precomposed.png</PackageIconUrl>
     <PackageId>para_client_csharp</PackageId>
-    <PackageLicenseUrl>http://opensource.org/licenses/Apache-2.0</PackageLicenseUrl>
+    <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
     <PackageProjectUrl>https://github.com/erudika/para-client-csharp</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/erudika/para-client-csharp</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageIcon>favicon.ico</PackageIcon>
+    <PackageReadmeFile>../README.md</PackageReadmeFile>
     <PackageTags>backend,para,cloud,api,client</PackageTags>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
@@ -35,14 +43,11 @@
     <PackageReference Include="AWSSDK.Core" Version="3.7.12.2" />
     <PackageReference Include="Microsoft.Extensions.Logging" Version="3.1.3" />
     <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="3.1.3" />
-    <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies" Version="1.0.0">
-      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-      <PrivateAssets>all</PrivateAssets>
-    </PackageReference>
     <PackageReference Include="Newtonsoft.Json" Version="13.0.2" />
     <PackageReference Include="RestSharp" Version="106.15.0" />
   </ItemGroup>
   <ItemGroup>
-    <Content Include="favicon.ico" />
+    <None Include="favicon.ico" Pack="true" PackagePath="\" />
+    <None Include="..\README.md" Pack="true" PackagePath="\" />
   </ItemGroup>
 </Project>

@@ -10,7 +10,7 @@
             "request": "launch",
             "preLaunchTask": "build",
             // If you have changed target frameworks, make sure to update the program path.
-            "program": "${workspaceFolder}/para-client-tests/bin/Debug/netcoreapp3.1/para-client-tests.dll",
+            "program": "${workspaceFolder}/para-client-tests/bin/Debug/net8.0/para-client-tests.dll",
             "args": [],
             "cwd": "${workspaceFolder}/para-client-tests",
             // For more information about the 'console' field, see https://aka.ms/VSCode-CS-LaunchJson-Console

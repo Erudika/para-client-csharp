@@ -214,7 +214,7 @@ namespace Para.Client
                     }
                     else
                     {
-                        logger.LogDebug(res.StatusCode + " - " + res.StatusDescription);
+                        logger.LogError(res.Request.Method + " " + res.Request.Resource + " - " + res.StatusCode + " - " + res.StatusDescription);
                     }
                 }
             }
@@ -292,13 +292,7 @@ namespace Para.Client
             RestClient client = new RestClient(req.Endpoint);
             client.UserAgent = "Para client for .NET";
 
-            string resource = reqPath;
-            if (reqPath.StartsWith("/"))
-            {
-                resource = reqPath.Substring(1);
-            }
-
-            var restReq = new RestRequest(resource, httpMethod);
+            var restReq = new RestRequest(reqPath, httpMethod);
 
             if (paramz != null)
             {
@@ -1558,7 +1552,9 @@ namespace Para.Client
                 arr[permission.Length] = "?";
                 permission = arr;
             }
-            resourcePath = resourcePath.Replace("/", "%2F");
+            resourcePath = Base64Encode(resourcePath);
+            subjectid = WebUtility.UrlEncode(subjectid);
+            subjectid = System.Web.HttpUtility.UrlEncode(subjectid);
             var entity = (string) getEntity(invokePut("_permissions/" + subjectid + "/" + resourcePath, permission), true);
             return entity == null ? null : JsonConvert.DeserializeObject<Dictionary<string, Dictionary<string, List<string>>>>(entity);
         }
@@ -1573,7 +1569,8 @@ namespace Para.Client
             if (string.IsNullOrWhiteSpace(subjectid) || string.IsNullOrWhiteSpace(resourcePath)) {
                 return new Dictionary<string, Dictionary<string, List<string>>>();
             }
-            resourcePath = resourcePath.Replace("/", "%2F");
+            resourcePath = Base64Encode(resourcePath);
+            subjectid = System.Web.HttpUtility.UrlEncode(subjectid);
             var entity = (string) getEntity(invokeDelete("_permissions/" + subjectid + "/" + resourcePath, null), true);
             return entity == null ? null : JsonConvert.DeserializeObject<Dictionary<string, Dictionary<string, List<string>>>>(entity);
         }
@@ -1602,7 +1599,8 @@ namespace Para.Client
             if (string.IsNullOrWhiteSpace(subjectid) || string.IsNullOrWhiteSpace(resourcePath) || string.IsNullOrWhiteSpace(httpMethod)) {
                 return false;
             }
-            resourcePath = resourcePath.Replace("/", "%2F");
+            resourcePath = Base64Encode(resourcePath);
+            subjectid = System.Web.HttpUtility.UrlEncode(subjectid);
             string url = "_permissions/" + subjectid + "/" + resourcePath + "/" + httpMethod;
             return bool.Parse((string) getEntity(invokeGet(url, null), true) ?? "false");
         }
@@ -1769,6 +1767,12 @@ namespace Para.Client
         /// <returns><c>true</c>, if all token was revoked, <c>false</c> otherwise.</returns>
         public bool revokeAllTokens() {
             return getEntity(invokeDelete(JWT_PATH, null), true) != null;
+        }
+
+        private static string Base64Encode(string plainText) 
+        {
+            var plainTextBytes = System.Text.Encoding.UTF8.GetBytes(plainText);
+            return System.Convert.ToBase64String(plainTextBytes);
         }
     }
 
