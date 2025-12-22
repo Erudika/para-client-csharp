@@ -38,31 +38,29 @@ namespace Para.Client.Tests
         [OneTimeSetUp]
         public static async Task setUpClass()
         {
-            // paraContainer = new ContainerBuilder()
-            //     .WithImage(ParaContainerImage)
-            //     .WithName($"para-client-tests-{Guid.NewGuid():N}")
-            //     .WithCleanUp(true)
-            //     .WithEnvironment("para_root_secret_override", "xeBCvtlH4Y6vD4tWB6NWA4KL7TFEBvcmiWnc9LjO+eCqYrGn4fOykw==")
-            //     .WithPortBinding(ParaContainerPort, assignRandomHostPort: true)
-            //     .WithWaitStrategy(DotNet.Testcontainers.Builders.Wait.ForUnixContainer()
-            //         .UntilHttpRequestIsSucceeded(request => request
-            //             .ForPort(ParaContainerPort)
-            //             .ForPath("/v1/_health")
-            //             .ForStatusCode(HttpStatusCode.OK)))
-            //     .Build();
+            paraContainer = new ContainerBuilder()
+                .WithImage(ParaContainerImage)
+                .WithName($"para-client-tests-{Guid.NewGuid():N}")
+                .WithCleanUp(true)
+                .WithEnvironment("para_root_secret_override", "xeBCvtlH4Y6vD4tWB6NWA4KL7TFEBvcmiWnc9LjO+eCqYrGn4fOykw==")
+                .WithPortBinding(ParaContainerPort, assignRandomHostPort: true)
+                .WithWaitStrategy(DotNet.Testcontainers.Builders.Wait.ForUnixContainer()
+                    .UntilHttpRequestIsSucceeded(request => request
+                        .ForPort(ParaContainerPort)
+                        .ForPath("/v1/_health")
+                        .ForStatusCode(HttpStatusCode.OK)))
+                .Build();
 
-            // await paraContainer.StartAsync();
-            // int mappedPort = paraContainer.GetMappedPublicPort(ParaContainerPort);
-            int mappedPort = 8080;
+            await paraContainer.StartAsync();
+            int mappedPort = paraContainer.GetMappedPublicPort(ParaContainerPort);
+            // int mappedPort = 8080;
             paraEndpoint = $"http://localhost:{mappedPort}";
 
-            // TestContext.Progress.WriteLine($"Para Testcontainer started at {paraEndpoint}.");
-            // await WaitForParaServerAsync(paraEndpoint, TimeSpan.FromMinutes(3));
+            TestContext.Progress.WriteLine($"Para Testcontainer started at {paraEndpoint}.");
+            await WaitForParaServerAsync(paraEndpoint, TimeSpan.FromMinutes(3));
 
             pc = new ParaClient("app:para", "xeBCvtlH4Y6vD4tWB6NWA4KL7TFEBvcmiWnc9LjO+eCqYrGn4fOykw==");
             pc.setEndpoint(paraEndpoint);
-
-            
 
             pc2 = new ParaClient("app:para", null);
             pc2.setEndpoint(paraEndpoint);
@@ -118,10 +116,10 @@ namespace Para.Client.Tests
         [OneTimeTearDown]
         public static async Task tearDownClass()
         {
-            // if (paraContainer != null)
-            // {
-            //     await paraContainer.DisposeAsync();
-            // }
+            if (paraContainer != null)
+            {
+                await paraContainer.DisposeAsync();
+            }
         }
 
         private static async Task WaitForParaServerAsync(string endpoint, TimeSpan timeout)
@@ -515,83 +513,87 @@ namespace Para.Client.Tests
             Assert.AreNotEqual("unknown", pc.getServerVersion());
         }
 
-        // [Test]
-        // public void testResourcePermissions()
-        // {
-        //     var keys = JsonConvert.DeserializeObject<Dictionary<string, string>>((string) pc.getEntity(pc.invokeGet("_setup/para-test-child", null), true));
-        //     ParaClient pcChild = new ParaClient("app:para-test-child", keys["secretKey"]);
-        //     pcChild.setEndpoint(paraEndpoint);
+        [Test]
+        public void testResourcePermissions()
+        {
+            var keys = JsonConvert.DeserializeObject<Dictionary<string, string>>((string) 
+                pc.getEntity(pc.invokeGet("_setup/para-test-child", null), true));
+            ParaClient pcChild = new ParaClient("app:para-test-child", keys["secretKey"]);
+            pcChild.setEndpoint(paraEndpoint);
 
-        //     // Permissions
-        //     var permits = pcChild.resourcePermissions();
-        //     Assert.NotNull(permits);
+            ParaClient pcChildAnon = new ParaClient("app:para-test-child", null);
+            pcChildAnon.setEndpoint(paraEndpoint);
 
-        //     Assert.IsTrue(pcChild.grantResourcePermission(null, dogsType, new string[]{}).Count == 0);
-        //     Assert.IsTrue(pcChild.grantResourcePermission(" ", "", new string[]{}).Count == 0);
+            // Permissions
+            var permits = pcChild.resourcePermissions();
+            Assert.NotNull(permits);
 
-        //     pcChild.grantResourcePermission(u1.id, dogsType, new [] {"GET"});
-        //     permits = pcChild.resourcePermissions(u1.id);
-        //     Assert.IsTrue(permits.ContainsKey(u1.id));
-        //     Assert.IsTrue(permits[u1.id].ContainsKey(dogsType));
-        //     Assert.IsTrue(pcChild.isAllowedTo(u1.id, dogsType, "GET"));
-        //     Assert.IsFalse(pcChild.isAllowedTo(u1.id, dogsType, "POST"));
-        //     // anonymous permissions
-        //     pcChild.revokeAllResourcePermissions("*");
-        //     Assert.IsFalse(pcChild.isAllowedTo("*", "utils/timestamp", "GET"));
-        //     Assert.IsNotNull(pcChild.grantResourcePermission("*", "utils/timestamp", new [] {"GET"}, true));
-        //     Assert.IsTrue(pc2.getTimestamp() > 0);
-        //     Assert.IsFalse(pcChild.isAllowedTo("*", "utils/timestamp", "DELETE"));
+            Assert.IsTrue(pcChild.grantResourcePermission(null, dogsType, new string[]{}).Count == 0);
+            Assert.IsTrue(pcChild.grantResourcePermission(" ", "", new string[]{}).Count == 0);
 
-        //     permits = pcChild.resourcePermissions();
-        //     Assert.IsTrue(permits.ContainsKey(u1.id));
-        //     Assert.IsTrue(permits[u1.id].ContainsKey(dogsType));
+            pcChild.grantResourcePermission(u1.id, dogsType, new [] {"GET"});
+            permits = pcChild.resourcePermissions(u1.id);
+            Assert.IsTrue(permits.ContainsKey(u1.id));
+            Assert.IsTrue(permits[u1.id].ContainsKey(dogsType));
+            Assert.IsTrue(pcChild.isAllowedTo(u1.id, dogsType, "GET"));
+            Assert.IsFalse(pcChild.isAllowedTo(u1.id, dogsType, "POST"));
+            // anonymous permissions
+            pcChild.revokeAllResourcePermissions("*");
+            Assert.IsFalse(pcChild.isAllowedTo("*", "utils/timestamp", "GET"));
+            Assert.IsNotNull(pcChild.grantResourcePermission("*", "utils/timestamp", new [] {"GET"}, true));
+            Assert.IsTrue(pcChildAnon.getTimestamp() > 0);
+            Assert.IsFalse(pcChild.isAllowedTo("*", "utils/timestamp", "DELETE"));
 
-        //     pcChild.revokeResourcePermission(u1.id, dogsType);
-        //     permits = pcChild.resourcePermissions(u1.id);
-        //     Assert.IsFalse(permits[u1.id].ContainsKey(dogsType));
-        //     Assert.IsFalse(pcChild.isAllowedTo(u1.id, dogsType, "GET"));
-        //     Assert.IsFalse(pcChild.isAllowedTo(u1.id, dogsType, "POST"));
+            permits = pcChild.resourcePermissions();
+            Assert.IsTrue(permits.ContainsKey(u1.id));
+            Assert.IsTrue(permits[u1.id].ContainsKey(dogsType));
 
-        //     pcChild.grantResourcePermission(u2.id, "*", new [] {"POST", "PUT", "PATCH", "DELETE"});
-        //     Assert.IsTrue(pcChild.isAllowedTo(u2.id, dogsType, "PUT"));
-        //     Assert.IsTrue(pcChild.isAllowedTo(u2.id, dogsType, "PATCH"));
+            pcChild.revokeResourcePermission(u1.id, dogsType);
+            permits = pcChild.resourcePermissions(u1.id);
+            Assert.IsFalse(permits[u1.id].ContainsKey(dogsType));
+            Assert.IsFalse(pcChild.isAllowedTo(u1.id, dogsType, "GET"));
+            Assert.IsFalse(pcChild.isAllowedTo(u1.id, dogsType, "POST"));
 
-        //     pcChild.revokeAllResourcePermissions(u2.id);
-        //     permits = pcChild.resourcePermissions();
-        //     Assert.IsFalse(pcChild.isAllowedTo(u2.id, dogsType, "PUT"));
-        //     Assert.IsFalse(permits.ContainsKey(u2.id));
-        //     //Assert.IsTrue(permits[u2.id].Count == 0);
+            pcChild.grantResourcePermission(u2.id, "*", new [] {"POST", "PUT", "PATCH", "DELETE"});
+            Assert.IsTrue(pcChild.isAllowedTo(u2.id, dogsType, "PUT"));
+            Assert.IsTrue(pcChild.isAllowedTo(u2.id, dogsType, "PATCH"));
 
-        //     pcChild.grantResourcePermission(u1.id, dogsType, new [] {"POST", "PUT", "PATCH", "DELETE"});
-        //     pcChild.grantResourcePermission("*", "*", new [] {"GET"});
-        //     pcChild.grantResourcePermission("*", catsType, new [] {"POST", "PUT", "PATCH", "DELETE"});
-        //     // user-specific permissions are in effect
-        //     Assert.IsTrue(pcChild.isAllowedTo(u1.id, dogsType, "PUT"));
-        //     Assert.IsFalse(pcChild.isAllowedTo(u1.id, dogsType, "GET"));
-        //     Assert.IsTrue(pcChild.isAllowedTo(u1.id, catsType, "PUT"));
-        //     Assert.IsTrue(pcChild.isAllowedTo(u1.id, catsType, "GET"));
+            pcChild.revokeAllResourcePermissions(u2.id);
+            permits = pcChild.resourcePermissions();
+            Assert.IsFalse(pcChild.isAllowedTo(u2.id, dogsType, "PUT"));
+            Assert.IsFalse(permits.ContainsKey(u2.id));
+            //Assert.IsTrue(permits[u2.id].Count == 0);
 
-        //     pcChild.revokeAllResourcePermissions(u1.id);
-        //     // user-specific permissions not found so check wildcard
-        //     Assert.IsFalse(pcChild.isAllowedTo(u1.id, dogsType, "PUT"));
-        //     Assert.IsTrue(pcChild.isAllowedTo(u1.id, dogsType, "GET"));
-        //     Assert.IsTrue(pcChild.isAllowedTo(u1.id, catsType, "PUT"));
-        //     Assert.IsTrue(pcChild.isAllowedTo(u1.id, catsType, "GET"));
+            pcChild.grantResourcePermission(u1.id, dogsType, new [] {"POST", "PUT", "PATCH", "DELETE"});
+            pcChild.grantResourcePermission("*", "*", new [] {"GET"});
+            pcChild.grantResourcePermission("*", catsType, new [] {"POST", "PUT", "PATCH", "DELETE"});
+            // user-specific permissions are in effect
+            Assert.IsTrue(pcChild.isAllowedTo(u1.id, dogsType, "PUT"));
+            Assert.IsFalse(pcChild.isAllowedTo(u1.id, dogsType, "GET"));
+            Assert.IsTrue(pcChild.isAllowedTo(u1.id, catsType, "PUT"));
+            Assert.IsTrue(pcChild.isAllowedTo(u1.id, catsType, "GET"));
 
-        //     pcChild.revokeResourcePermission("*", catsType);
-        //     // resource-specific permissions not found so check wildcard
-        //     Assert.IsFalse(pcChild.isAllowedTo(u1.id, dogsType, "PUT"));
-        //     Assert.IsFalse(pcChild.isAllowedTo(u1.id, catsType, "PUT"));
-        //     Assert.IsTrue(pcChild.isAllowedTo(u1.id, dogsType, "GET"));
-        //     Assert.IsTrue(pcChild.isAllowedTo(u1.id, catsType, "GET"));
-        //     Assert.IsTrue(pcChild.isAllowedTo(u2.id, dogsType, "GET"));
-        //     Assert.IsTrue(pcChild.isAllowedTo(u2.id, catsType, "GET"));
+            pcChild.revokeAllResourcePermissions(u1.id);
+            // user-specific permissions not found so check wildcard
+            Assert.IsFalse(pcChild.isAllowedTo(u1.id, dogsType, "PUT"));
+            Assert.IsTrue(pcChild.isAllowedTo(u1.id, dogsType, "GET"));
+            Assert.IsTrue(pcChild.isAllowedTo(u1.id, catsType, "PUT"));
+            Assert.IsTrue(pcChild.isAllowedTo(u1.id, catsType, "GET"));
 
-        //     pcChild.revokeAllResourcePermissions("*");
-        //     pcChild.revokeAllResourcePermissions(u1.id);
+            pcChild.revokeResourcePermission("*", catsType);
+            // resource-specific permissions not found so check wildcard
+            Assert.IsFalse(pcChild.isAllowedTo(u1.id, dogsType, "PUT"));
+            Assert.IsFalse(pcChild.isAllowedTo(u1.id, catsType, "PUT"));
+            Assert.IsTrue(pcChild.isAllowedTo(u1.id, dogsType, "GET"));
+            Assert.IsTrue(pcChild.isAllowedTo(u1.id, catsType, "GET"));
+            Assert.IsTrue(pcChild.isAllowedTo(u2.id, dogsType, "GET"));
+            Assert.IsTrue(pcChild.isAllowedTo(u2.id, catsType, "GET"));
 
-        //     pc.invokeDelete("apps/para-test-child", null);
-        // }
+            pcChild.revokeAllResourcePermissions("*");
+            pcChild.revokeAllResourcePermissions(u1.id);
+
+            pc.invokeDelete("apps/para-test-child", null);
+        }
 
         [Test]
         public void testAppSettings()
